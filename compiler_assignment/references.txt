@@ -1,0 +1,1 @@
+tabel lexer - https://www.programmingnotes.org/4699/cpp-simple-lexer-using-a-finite-state-machine/
