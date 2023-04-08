@@ -20,32 +20,52 @@ struct Token {
     std::string value;
 };
 
+enum State {
+    START,
+    ID,
+    NUMBER,
+    COLOUR
+};
+
 class Lexer {
 public:
-    Lexer(const std::string &input) : input(input), current(0) {}
+    Lexer(const std::string &input) : input(input), current(0), state(START) {}
 
     std::vector<Token> tokenize() {
         std::vector<Token> tokens;
 
         while (current < input.size()) {
-            skipWhitespace();
-
-            if (current >= input.size()) {
-                break;
-            }
-
-            if (isalpha(input[current]) || input[current] == '_') {
-                tokens.push_back(identifier());
-            } else if (isdigit(input[current])) {
-                tokens.push_back(number());
-            } else if (input[current] == '#') {
-                tokens.push_back(colour());
-            } else if (operators.find(input[current]) != std::string::npos) {
-                tokens.push_back(op());
-            } else if (delimiters.find(input[current]) != std::string::npos) {
-                tokens.push_back(delimiter());
-            } else {
-                throw std::runtime_error("Unexpected character encountered: " + std::string(1, input[current]));
+            char c = input[current];
+            switch (state) {
+                case START:
+                    if (isspace(c)) {
+                        current++;
+                    } else if (isalpha(c) || c == '_') {
+                        state = ID;
+                    } else if (isdigit(c)) {
+                        state = NUMBER;
+                    } else if (c == '#') {
+                        state = COLOUR;
+                        current++;
+                    } else if (operators.find(c) != std::string::npos) {
+                        tokens.push_back({OPERATOR, std::string(1, c)});
+                        current++;
+                    } else if (delimiters.find(c) != std::string::npos) {
+                        tokens.push_back({DELIMITER, std::string(1, c)});
+                        current++;
+                    } else {
+                        throw std::runtime_error("Unexpected character encountered: " + std::string(1, c));
+                    }
+                    break;
+                case ID:
+                    identifier(tokens);
+                    break;
+                case NUMBER:
+                    number(tokens);
+                    break;
+                case COLOUR:
+                    colour(tokens);
+                    break;
             }
         }
 
@@ -55,17 +75,12 @@ public:
 private:
     std::string input;
     std::size_t current;
+    State state;
 
     const std::string operators = "*+/and+-or<>=!:";
     const std::string delimiters = "{},;()";
 
-    void skipWhitespace() {
-        while (current < input.size() && isspace(input[current])) {
-            current++;
-        }
-    }
-
-    Token identifier() {
+    void identifier(std::vector<Token> &tokens) {
         std::size_t start = current;
 
         while (current < input.size() && (isalnum(input[current]) || input[current] == '_')) {
@@ -75,10 +90,11 @@ private:
         std::string value = input.substr(start, current - start);
         TokenType type = keywords.find(value) != keywords.end() ? KEYWORD : IDENTIFIER;
 
-        return {type, value};
+        tokens.push_back({type, value});
+        state = START;
     }
 
-    Token number() {
+    void number(std::vector<Token> &tokens) {
         std::size_t start = current;
         bool is_float = false;
 
@@ -92,18 +108,18 @@ private:
             current++;
         }
 
-        std::string value = input.substr(start, current - start);
         TokenType type = is_float ? FLOAT_LITERAL : INTEGER_LITERAL;
-
-        return {type, value};
+        tokens.push_back({type, input.substr(start, current - start)});
+        state = START;
     }
 
-    Token colour() {
+    void colour(std::vector<Token> &tokens) {
         if (current + 6 >= input.size()) {
             throw std::runtime_error("Invalid colour format (too short): " + input.substr(current));
         }
 
         std::string value = input.substr(current, 7);
+        value.pop_back(); // Remove the trailing semicolon
         current += 7;
 
         for (size_t i = 1; i < value.size(); ++i) {
@@ -112,21 +128,8 @@ private:
             }
         }
 
-        return {COLOUR_LITERAL, value};
-    }
-
-    Token op() {
-        std::string value = std::string(1, input[current]);
-        current++;
-
-        return {OPERATOR, value};
-    }
-
-    Token delimiter() {
-        std::string value = std::string(1, input[current]);
-        current++;
-
-        return {DELIMITER, value};
+        tokens.push_back({COLOUR_LITERAL, value});
+        state = START;
     }
 
     const std::unordered_map<std::string, TokenType> keywords = {
