@@ -4,6 +4,7 @@
 #include <cctype>
 #include <unordered_map>
 #include <stdexcept>
+#include <array>
 
 enum TokenType {
     IDENTIFIER,
@@ -12,7 +13,8 @@ enum TokenType {
     COLOUR_LITERAL,
     KEYWORD,
     OPERATOR,
-    DELIMITER
+    DELIMITER,
+    BOOLEAN_LITERAL
 };
 
 struct Token {
@@ -24,7 +26,9 @@ enum State {
     START,
     ID,
     NUMBER,
-    COLOUR
+    COLOUR,
+    BOOLEAN,
+    ASSIGN
 };
 
 class Lexer {
@@ -36,25 +40,15 @@ public:
 
         while (current < input.size()) {
             char c = input[current];
-            switch (state) {
+            int charClass = classifyChar(c);
+            State nextState = transitionTable[state][charClass];
+
+            switch (nextState) {
                 case START:
                     if (isspace(c)) {
                         current++;
-                    } else if (isalpha(c) || c == '_') {
-                        state = ID;
-                    } else if (isdigit(c)) {
-                        state = NUMBER;
-                    } else if (c == '#') {
-                        state = COLOUR;
-                        current++;
-                    } else if (operators.find(c) != std::string::npos) {
-                        tokens.push_back({OPERATOR, std::string(1, c)});
-                        current++;
-                    } else if (delimiters.find(c) != std::string::npos) {
-                        tokens.push_back({DELIMITER, std::string(1, c)});
-                        current++;
                     } else {
-                        throw std::runtime_error("Unexpected character encountered: " + std::string(1, c));
+                        state = nextState;
                     }
                     break;
                 case ID:
@@ -66,10 +60,43 @@ public:
                 case COLOUR:
                     colour(tokens);
                     break;
+                case BOOLEAN:
+                    boolean(tokens);
+                    break;
+                case ASSIGN:  // new case for the ASSIGN state
+                    tokens.push_back({OPERATOR, "="});
+                    current++;
+                    state = START;
+                    break;
+                default:
+                    throw std::runtime_error("Unexpected character encountered: " + std::string(1, c));
             }
         }
 
         return tokens;
+    }
+
+    std::string tokenTypeToString(TokenType type) {
+        switch(type) {
+            case IDENTIFIER:
+                return "IDENTIFIER";
+            case INTEGER_LITERAL:
+                return "INTEGER_LITERAL";
+            case FLOAT_LITERAL:
+                return "FLOAT_LITERAL";
+            case COLOUR_LITERAL:
+                return "COLOUR_LITERAL";
+            case KEYWORD:
+                return "KEYWORD";
+            case OPERATOR:
+                return "OPERATOR";
+            case DELIMITER:
+                return "DELIMITER";
+            case BOOLEAN_LITERAL:
+                return "BOOLEAN_LITERAL";
+            default:
+                return "UNKNOWN";
+        }
     }
 
 private:
@@ -77,8 +104,27 @@ private:
     std::size_t current;
     State state;
 
-    const std::string operators = "*+/and+-or<>=!:";
-    const std::string delimiters = "{},;()";
+    enum CharClass {
+        WHITESPACE,
+        ALPHA,
+        DIGIT,
+        HASH,
+        OPER,
+        DELIM,
+        INVALID
+    };
+
+    static const std::array<std::array<State, 7>, 6> transitionTable;
+
+    CharClass classifyChar(char c) const {
+        if (isspace(c)) return WHITESPACE;
+        if (isalpha(c) || c == '_') return ALPHA;
+        if (isdigit(c)) return DIGIT;
+        if (c == '#') return HASH;
+        if (operators.find(c) != std::string::npos) return OPER;
+        if (delimiters.find(c) != std::string::npos) return DELIM;
+        return INVALID;
+    }
 
     void identifier(std::vector<Token> &tokens) {
         std::size_t start = current;
@@ -88,7 +134,15 @@ private:
         }
 
         std::string value = input.substr(start, current - start);
-        TokenType type = keywords.find(value) != keywords.end() ? KEYWORD : IDENTIFIER;
+        TokenType type;
+
+        if (keywords.find(value) != keywords.end()) {
+            type = KEYWORD;
+        } else if (boolean_literals.find(value) != boolean_literals.end()) {
+            type = BOOLEAN_LITERAL;
+        } else {
+            type = IDENTIFIER;
+        }
 
         tokens.push_back({type, value});
         state = START;
@@ -115,16 +169,17 @@ private:
 
     void colour(std::vector<Token> &tokens) {
         if (current + 6 >= input.size()) {
-            throw std::runtime_error("Invalid colour format (too short): " + input.substr(current));
+            throw std::runtime_error("Invalid color literal (must have 6 hex digits): " + input.substr(current, input.size() - current));
         }
 
-        std::string value = input.substr(current, 7);
-        value.pop_back(); // Remove the trailing semicolon
-        current += 7;
+        std::string value = "#";
 
-        for (size_t i = 1; i < value.size(); ++i) {
-            if (!isxdigit(value[i])) {
-                throw std::runtime_error("Invalid colour format (non-hex digit): " + value);
+        for (int i = 0; i < 6; i++) {
+            char c = input[current++];
+            if (isdigit(c) || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')) {
+                value += c;
+            } else {
+                throw std::runtime_error("Invalid color literal (non-hex digit encountered): " + std::string(1, c));
             }
         }
 
@@ -132,23 +187,82 @@ private:
         state = START;
     }
 
-    const std::unordered_map<std::string, TokenType> keywords = {
-            {"let", KEYWORD}, {"true", KEYWORD}, {"false", KEYWORD},
-            {"float", KEYWORD}, {"int", KEYWORD}, {"bool", KEYWORD}, {"colour", KEYWORD},
-            {"__width", KEYWORD}, {"__height", KEYWORD}, {"__read", KEYWORD}, {"__randi", KEYWORD},
-            {"__print", KEYWORD}, {"__delay", KEYWORD}, {"__pixelr", KEYWORD}, {"__pixel", KEYWORD},
-            {"return", KEYWORD}, {"if", KEYWORD}, {"else", KEYWORD}, {"for", KEYWORD}, {"while", KEYWORD},
-            {"fun", KEYWORD}, {"not", KEYWORD}
+    void boolean(std::vector<Token> &tokens) {
+        std::size_t start = current;
+
+        while (current < input.size() && isalnum(input[current])) {
+            current++;
+        }
+
+        std::string value = input.substr(start, current - start);
+
+        if (boolean_literals.find(value) != boolean_literals.end()) {
+            tokens.push_back({BOOLEAN_LITERAL, value});
+        } else {
+            throw std::runtime_error("Invalid boolean literal: " + value);
+        }
+
+        state = START;
+    }
+
+    std::unordered_map<std::string, int> keywords = {
+            {"float", 1},
+            {"int", 1},
+            {"bool", 1},
+            {"colour", 1},
+            {"let", 1},
+            {"fun", 1},
+            {"if", 1},
+            {"else", 1},
+            {"for", 1},
+            {"while", 1},
+            {"return", 1},
+            {"__width", 1},
+            {"__height", 1},
+            {"__read", 1},
+            {"__randi", 1},
+            {"__print", 1},
+            {"__delay", 1},
+            {"__pixel", 1},
+            {"__pixelr", 1}
     };
+
+    std::unordered_map<std::string, int> boolean_literals = {
+            {"true", 1},
+            {"false", 1}
+    };
+
+    const std::string operators = "*+/and- =<>=!";
+    const std::string delimiters = "{},;()";
 };
 
-int main() {
-    std::string input = "let x: int = 42; let y: float = 3.14; let color: colour = #FFAABB; if (x < y) { __print x; }";
-    Lexer lexer(input);
-    std::vector<Token> tokens = lexer.tokenize();
+const std::array<std::array<State, 7>, 6> Lexer::transitionTable = {{
+                                                                            //             WHITESPACE ALPHA   DIGIT    HASH     OPER     DELIM    INVALID
+                                                                            /* START    */ { START,     ID,     NUMBER,  COLOUR,  ASSIGN,  START,   START },
+                                                                            /* ID       */ { START,     ID,     ID,      START,   ASSIGN,  START,   START },
+                                                                            /* NUMBER   */ { START,     ID,     NUMBER,  START,   ASSIGN,  START,   START },
+                                                                            /* COLOUR   */ { START,     START,  START,   START,   ASSIGN,  START,   START },
+                                                                            /* BOOLEAN  */ { START,     BOOLEAN,BOOLEAN, START,   ASSIGN,  START,   START },
+                                                                            /* ASSIGN   */ { START,     START,  START,   START,   ASSIGN,  START,   START }
+                                                                    }};
 
-    for (const Token &token : tokens) {
-        std::cout << "Type: " << token.type << " | Value: " << token.value << std::endl;
+
+int main() {
+    std::string input = "let x=12";
+    std::cout << "\nInput: " << input << std::endl;
+    Lexer lexer(input);
+
+    try {
+        std::vector<Token> tokens = lexer.tokenize();
+
+        std::cout << "Number of tokens: " << tokens.size() << std::endl;
+        std::cout << "\n" << std::string(120, '-') << std::endl;
+
+        for (const auto &token : tokens) {
+            std::cout << "Token type: " << lexer.tokenTypeToString(token.type) << " Value: " << token.value << std::endl;
+        }
+    } catch (std::runtime_error &e) {
+        std::cerr << "Error: " << e.what() << std::endl;
     }
 
     return 0;
