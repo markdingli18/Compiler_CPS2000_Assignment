@@ -14,7 +14,8 @@ enum TokenType {
     KEYWORD,
     OPERATOR,
     DELIMITER,
-    BOOLEAN_LITERAL
+    BOOLEAN_LITERAL,
+    STRING_LITERAL
 };
 
 struct Token {
@@ -28,7 +29,8 @@ enum State {
     NUMBER,
     COLOUR,
     BOOLEAN,
-    ASSIGN
+    ASSIGN,
+    STRING
 };
 
 class Lexer {
@@ -47,6 +49,8 @@ public:
                 case START:
                     if (isspace(c)) {
                         current++;
+                    } else if (charClass == QUOTE) {   // Handle double quote separately
+                        string_literal(tokens);
                     } else {
                         state = nextState;
                     }
@@ -63,11 +67,15 @@ public:
                 case BOOLEAN:
                     boolean(tokens);
                     break;
-                case ASSIGN:  // new case for the ASSIGN state
+                case ASSIGN:
                     tokens.push_back({OPERATOR, "="});
                     current++;
                     state = START;
                     break;
+                case STRING:
+                    string_literal(tokens);
+                    break;
+
                 default:
                     throw std::runtime_error("Unexpected character encountered: " + std::string(1, c));
             }
@@ -94,6 +102,8 @@ public:
                 return "DELIMITER";
             case BOOLEAN_LITERAL:
                 return "BOOLEAN_LITERAL";
+            case STRING_LITERAL:
+                return "STRING_LITERAL";
             default:
                 return "UNKNOWN";
         }
@@ -111,10 +121,14 @@ private:
         HASH,
         OPER,
         DELIM,
-        INVALID
+        INVALID,
+        QUOTE,
+        SLASH,
+        STAR,
+        SEMICOLON  // new char class for semicolon
     };
 
-    static const std::array<std::array<State, 7>, 6> transitionTable;
+    static const std::array<std::array<State, 11>, 9> transitionTable;
 
     CharClass classifyChar(char c) const {
         if (isspace(c)) return WHITESPACE;
@@ -123,6 +137,10 @@ private:
         if (c == '#') return HASH;
         if (operators.find(c) != std::string::npos) return OPER;
         if (delimiters.find(c) != std::string::npos) return DELIM;
+        if (c == '"') return QUOTE;
+        if (c == '/') return SLASH;
+        if (c == '*') return STAR;
+        if (c == ';') return SEMICOLON;  // new case for semicolon
         return INVALID;
     }
 
@@ -205,6 +223,48 @@ private:
         state = START;
     }
 
+    void string_literal(std::vector<Token> &tokens) {
+        current++;  // skip the initial double quote
+        std::size_t start = current;
+        std::string value;
+
+        while (current < input.size() && input[current] != '"') {
+            if (input[current] == '\\') {
+                current++; // consume the backslash
+                if (current >= input.size()) {
+                    throw std::runtime_error("Invalid escape sequence at end of string literal.");
+                }
+
+                char c = input[current];
+                switch (c) {
+                    case 'n':
+                        value += '\n';
+                        break;
+                    case 't':
+                        value += '\t';
+                        break;
+                    case '\\':
+                        value += '\\';
+                        break;
+                    default:
+                        throw std::runtime_error("Invalid escape sequence: \\" + std::string(1, c));
+                }
+            } else {
+                value += input[current];
+            }
+
+            current++;
+        }
+
+        if (current >= input.size()) {
+            throw std::runtime_error("Unterminated string literal.");
+        }
+
+        tokens.push_back({STRING_LITERAL, value});
+        current++;  // skip the closing double quote
+        state = START;
+    }
+
     std::unordered_map<std::string, int> keywords = {
             {"float", 1},
             {"int", 1},
@@ -236,19 +296,19 @@ private:
     const std::string delimiters = "{},;()";
 };
 
-const std::array<std::array<State, 7>, 6> Lexer::transitionTable = {{
-                                                                            //             WHITESPACE ALPHA   DIGIT    HASH     OPER     DELIM    INVALID
-                                                                            /* START    */ { START,     ID,     NUMBER,  COLOUR,  ASSIGN,  START,   START },
-                                                                            /* ID       */ { START,     ID,     ID,      START,   ASSIGN,  START,   START },
-                                                                            /* NUMBER   */ { START,     ID,     NUMBER,  START,   ASSIGN,  START,   START },
-                                                                            /* COLOUR   */ { START,     START,  START,   START,   ASSIGN,  START,   START },
-                                                                            /* BOOLEAN  */ { START,     BOOLEAN,BOOLEAN, START,   ASSIGN,  START,   START },
-                                                                            /* ASSIGN   */ { START,     START,  START,   START,   ASSIGN,  START,   START }
-                                                                    }};
-
+const std::array<std::array<State, 11>, 9> Lexer::transitionTable = {{
+                                                                             // WHITESPACE ALPHA   DIGIT    HASH     OPER     DELIM   INVALID   QUOTE    SLASH    STAR     SEMICOLON
+                                                                             { START,     ID,     NUMBER,  COLOUR,  ASSIGN,  START,  START,    STRING,  START,  START,   START },  // START
+                                                                             { START,     ID,     ID,      START,   ASSIGN,  START,  START,    START,   START,  START,   START },  // ID
+                                                                             { START,     ID,     NUMBER,  START,   ASSIGN,  START,  START,    START,   START,  START,   START },  // NUMBER
+                                                                             { START,     START,  START,   START,   ASSIGN,  START,  START,    START,   START,  START,   START },  // COLOUR
+                                                                             { START,     BOOLEAN,BOOLEAN, START,   ASSIGN,  START,  START,    START,   START,  START,   START },  // BOOLEAN
+                                                                             { START,     START,  START,   START,   ASSIGN,  START,  START,    START,   START,  START,   START },  // ASSIGN
+                                                                             { START,     START,  START,   START,   START,   START,  START,    STRING,  START,  START,   START },  // STRING
+                                                                     }};
 
 int main() {
-    std::string input = "let x=12";
+    std::string input = R"(let x = 45)";
     std::cout << "\nInput: " << input << std::endl;
     Lexer lexer(input);
 
