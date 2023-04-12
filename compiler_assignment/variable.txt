@@ -1,0 +1,9 @@
+TOKEN_TYPE_INT == INT --> same others
+TOKEN_TYPE_LEFTPAR == LPAREN
+TOKEN_TYPE_RIGHTPAR == RPAREN
+
+idx == index
+ln == line
+col == column
+fn == file_name
+ftxt == file_text
