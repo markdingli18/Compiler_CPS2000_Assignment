@@ -9,6 +9,17 @@ class Token:
 ###########################################################################################################################################
 
 class Lexer:
+    
+    KEYWORDS = {
+    "if": "IF",
+    "else": "ELSE",
+    "elif": "ELIF",
+    "while": "WHILE",
+    "for": "FOR",
+    "return": "RETURN",
+    "def": "FUNCTION_DEF",
+}
+    
     def __init__(self, source_code):
         self.source_code = source_code
         self.transition_table = self.build_transition_table()
@@ -231,11 +242,7 @@ class Lexer:
     def get_token_type_from_state(self, state, lexeme):
         if state == 1:
             # Check if the lexeme is a keyword
-            keywords = {'if', 'else', 'while', 'for', 'return', 'def'}
-            if lexeme in keywords:
-                return lexeme.upper()
-            else:
-                return 'IDENTIFIER'
+            return Lexer.KEYWORDS.get(lexeme, "IDENTIFIER")
         elif state == 2:
             return 'INTEGER_LITERAL'
         elif state == 3:
@@ -333,7 +340,18 @@ class Lexer:
             if token.token_type != "WHITESPACE":  # Exclude whitespace tokens
                 tokens.append(token)
         return tokens
-    
+
+###########################################################################################################################################
+
+    def lex_identifier_or_keyword(self):
+        while self.is_alphanumeric(self.peek()):
+            self.advance()
+
+        text = self.source[self.start:self.current]
+        token_type = Lexer.KEYWORDS.get(text, "IDENTIFIER")
+        self.add_token(token_type, text)
+
+
 ###########################################################################################################################################
 
 class LexerError(Exception):
@@ -368,16 +386,16 @@ elif x < 2:
 else:
     x = x // 2
     y = x ** 2
-    z = x && y
-    a = x || y
+    z = x and y
+    a = x or y
     d = x == y
     e = x != y
 """
 
-try:
-    lexer = Lexer(source_code)
-    tokens = lexer.tokenize()
-    for token in tokens:
-        print(token)
-except LexerError as e:
-    print(f"Error: {e}")
+#try:
+#    lexer = Lexer(source_code)
+#    tokens = lexer.tokenize()
+#    for token in tokens:
+#        print(token)
+#except LexerError as e:
+#    print(f"Error: {e}")
