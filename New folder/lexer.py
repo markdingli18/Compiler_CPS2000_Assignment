@@ -9,16 +9,19 @@ class Token:
 ###########################################################################################################################################
 
 class Lexer:
-    
+            
     KEYWORDS = {
-    "if": "IF",
-    "else": "ELSE",
-    "elif": "ELIF",
-    "while": "WHILE",
-    "for": "FOR",
-    "return": "RETURN",
-    "def": "FUNCTION_DEF",
-}
+        "if": "IF",
+        "else": "ELSE",
+        "elif": "ELIF",
+        "while": "WHILE",
+        "for": "FOR",
+        "return": "RETURN",
+        "def": "FUNCTION_DEF",
+        "true": "BOOLEAN_LITERAL",
+        "false": "BOOLEAN_LITERAL",
+    }
+
     
     def __init__(self, source_code):
         self.source_code = source_code
@@ -128,6 +131,7 @@ class Lexer:
         transition_table[(29, 'u')] = 30
         transition_table[(30, 'e')] = 31
 
+        # Transitions for 'false' boolean literal
         transition_table[(0, 'f')] = 32
         transition_table[(32, 'a')] = 33
         transition_table[(33, 'l')] = 34
@@ -303,6 +307,8 @@ class Lexer:
             return 'BOOLEAN_LITERAL'
         elif state == 31:
             return 'BOOLEAN_LITERAL'
+        elif state == 36:
+            return 'BOOLEAN_LITERAL'
         elif state == 37:
             return 'WHITESPACE'
         elif state == 38:
@@ -376,26 +382,21 @@ class InvalidEscapeSequenceError(LexerError):
 
 # Usage:
 source_code = """
-if x > 5:
-    x = x + 10
-    y = x - 7
-    z = x * y
-elif x < 2:
-    x = x / 2
-    y = x % 3
+a = 3;
+b = 4;
+c = 5;
+if (a < b && b < c):
+    result = "ascending";
+elif (a > b && b > c):
+    result = "descending";
 else:
-    x = x // 2
-    y = x ** 2
-    z = x and y
-    a = x or y
-    d = x == y
-    e = x != y
+    result = "mixed";
 """
 
-#try:
-#    lexer = Lexer(source_code)
-#    tokens = lexer.tokenize()
-#    for token in tokens:
-#        print(token)
-#except LexerError as e:
-#    print(f"Error: {e}")
+try:
+    lexer = Lexer(source_code)
+    tokens = lexer.tokenize()
+    for token in tokens:
+        print(token)
+except LexerError as e:
+    print(f"Error: {e}")

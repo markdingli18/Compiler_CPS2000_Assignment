@@ -19,6 +19,12 @@ class Parser:
             return ("ASSIGNMENT", identifier, value)
         elif self.match("IF"):
             return self.parse_if()
+        elif self.match("ELIF"):
+            return self.parse_if()
+        elif self.match("ELSE"):
+            return self.parse_if()
+        else:
+            raise ParserError(f"Invalid statement at token {self.tokens[self.current_index]}")
 
     def parse_block(self):
         self.expect("COLON")
@@ -33,16 +39,38 @@ class Parser:
         self.expect("CLOSE_PAREN")
         true_branch = self.parse_block()
         false_branch = None
-        if self.match("ELSE"):
+        if self.match("ELIF"):
+            false_branch = [self.parse_if()]
+        elif self.match("ELSE"):
             false_branch = self.parse_block()
         return ("IF", condition, true_branch, false_branch)
     
     def parse_condition(self):
-        left = self.parse_expression()
+        left = self.parse_logical_or()
 
-        while self.match("EQUALITY_OPERATOR") or self.match("RELATIONAL_OPERATOR") or self.match("LOGICAL_OPERATOR"):
+        while self.match("EQUALITY_OPERATOR") or self.match("RELATIONAL_OPERATOR"):
             op = self.previous().token_type
-            right = self.parse_expression()
+            right = self.parse_logical_or()
+            left = (op, left, right)
+
+        return left
+
+    def parse_logical_or(self):
+        left = self.parse_logical_and()
+
+        while self.match("LOGICAL_OR"):
+            op = self.previous().token_type
+            right = self.parse_logical_and()
+            left = (op, left, right)
+
+        return left
+
+    def parse_logical_and(self):
+        left = self.parse_comparison()
+
+        while self.match("LOGICAL_AND"):
+            op = self.previous().token_type
+            right = self.parse_comparison()
             left = (op, left, right)
 
         return left
@@ -72,6 +100,8 @@ class Parser:
             return ("IDENTIFIER", self.previous().lexeme)
         elif self.match("INTEGER_LITERAL"):
             return ("INTEGER_LITERAL", int(self.previous().lexeme))
+        elif self.match("BOOLEAN_LITERAL"):
+            return ("BOOLEAN_LITERAL", self.previous().lexeme == "true")
         elif self.match("OPEN_PAREN"):
             expr = self.parse_expression()
             self.expect("CLOSE_PAREN")
@@ -94,29 +124,12 @@ class Parser:
 
     def previous(self):
         return self.tokens[self.current_index - 1]
-    
-    def parse_statement(self):
-        if self.match("IDENTIFIER") and self.match("ASSIGNMENT_OPERATOR"):
-            identifier = self.previous().lexeme
-            value = self.parse_expression()
-            self.expect("SEMICOLON")
-            return ("ASSIGNMENT", identifier, value)
-        elif self.match("IF"):
-            return self.parse_if()
-        else:
-            raise ParserError(f"Invalid statement at token {self.tokens[self.current_index]}")
 
 class ParserError(Exception):
     pass
 
 # Usage:
-source_code = """
-x = 1;
-if (x == 1):
-    x = x + 1;
-else:
-    x = x - 1;
-"""
+source_code = "Hello world";
 
 try:
     lexer = Lexer(source_code)
