@@ -20,8 +20,8 @@ class Lexer:
         "def": "FUNCTION_DEF",
         "true": "BOOLEAN_LITERAL",
         "false": "BOOLEAN_LITERAL",
+        "not": "LOGICAL_OPERATOR", 
     }
-
     
     def __init__(self, source_code):
         self.source_code = source_code
@@ -173,25 +173,24 @@ class Lexer:
         if self.position < len(self.source_code):
             # Get the character at the current position in the source code
             char = self.source_code[self.position]
-            # Check for escape sequences
-            if char == "\\":
-                next_char = self.source_code[self.position + 1] if self.position + 1 < len(self.source_code) else None
+
+            if self.open_quote and char == "\\":
+                self.position += 1
+                next_char = self.source_code[self.position] if self.position < len(self.source_code) else None
                 if next_char in ['\\', '\"', '\'']:
-                    char = "\\" + next_char
-                    self.position += 2
+                    char = next_char
                 elif next_char == 'n':
                     char = '\n'
-                    self.position += 2
                 else:
                     raise InvalidEscapeSequenceError(f"\\{next_char}")
-            else:
-                # Increment the position to move to the next character
-                self.position += 1
+
+            # Increment the position to move to the next character
+            self.position += 1
             return char
         else:
             # Return None if the end of the source code has been reached
             return None
-        
+
 ###########################################################################################################################################    
 
     def get_token(self):
@@ -209,37 +208,38 @@ class Lexer:
                         raise InvalidTokenError(lexeme)
                 return None
 
-            next_state = self.transition_table.get((self.current_state, char), -1)
-
-            if self.open_quote is None and (char == '"' or char == "'"):
-                self.open_quote = char
-
-            if next_state == -1:
-                if self.current_state == 0:
-                    raise UnexpectedCharacterError(char)
-                elif self.current_state in [19, 20, 21] and char == self.open_quote:
-                    lexeme += char
-                    token_type = self.get_token_type_from_state(self.current_state, lexeme)
-                    if token_type:
-                        token = Token(token_type, lexeme)
-                        self.current_state = 0
-                        self.open_quote = None
-                        return token
-                    else:
-                        raise InvalidTokenError(lexeme)
-                else:
-                    token_type = self.get_token_type_from_state(self.current_state, lexeme)
-                    if token_type:
-                        token = Token(token_type, lexeme)
-                        self.position -= 1
-                        self.current_state = 0
-                        self.open_quote = None
-                        return token
-                    else:
-                        raise InvalidTokenError(lexeme)
-            else:
-                self.current_state = next_state
+            if char in ["\"", "\'"] and self.open_quote == char and self.current_state in [19, 20, 21]:
                 lexeme += char
+                token_type = self.get_token_type_from_state(self.current_state, lexeme)
+                if token_type:
+                    token = Token(token_type, lexeme)
+                    self.current_state = 0
+                    self.open_quote = None
+                    return token
+                else:
+                    raise InvalidTokenError(lexeme)
+            else:
+                next_state = self.transition_table.get((self.current_state, char), -1)
+
+                if self.open_quote is None and (char == '"' or char == "'"):
+                    self.open_quote = char
+
+                if next_state == -1:
+                    if self.current_state == 0:
+                        raise UnexpectedCharacterError(char)
+                    else:
+                        token_type = self.get_token_type_from_state(self.current_state, lexeme)
+                        if token_type:
+                            token = Token(token_type, lexeme)
+                            self.position -= 1
+                            self.current_state = 0
+                            self.open_quote = None
+                            return token
+                        else:
+                            raise InvalidTokenError(lexeme)
+                else:
+                    self.current_state = next_state
+                    lexeme += char
 
 ###########################################################################################################################################
 
@@ -382,21 +382,16 @@ class InvalidEscapeSequenceError(LexerError):
 
 # Usage:
 source_code = """
-a = 3;
-b = 4;
-c = 5;
-if (a < b && b < c):
-    result = "ascending";
-elif (a > b && b > c):
-    result = "descending";
-else:
-    result = "mixed";
+def add(x, y):
+    return x + y;
+
+result = add(5, 3);
 """
 
-try:
-    lexer = Lexer(source_code)
-    tokens = lexer.tokenize()
-    for token in tokens:
-        print(token)
-except LexerError as e:
-    print(f"Error: {e}")
+#try:
+#    lexer = Lexer(source_code)
+#    tokens = lexer.tokenize()
+#    for token in tokens:
+#        print(token)
+#except LexerError as e:
+#    print(f"Error: {e}")
