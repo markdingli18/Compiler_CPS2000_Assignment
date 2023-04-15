@@ -1,0 +1,24 @@
+LEXER
+
+Comments: "// This is a comment", "/* This is a\nmulti-line comment */"
+Type 
+ColourLiteral 
+PadWidth 
+PadHeight 
+PadRead 
+MultiplicativeOp 
+AdditiveOp
+RelationalOp
+
+-------------------------------------------------------------------------------------------------
+PARSER
+
+Comments: "// This is a comment", "/* This is a\nmulti-line comment */"
+Type 
+ColourLiteral 
+PadWidth 
+PadHeight 
+PadRead 
+MultiplicativeOp 
+AdditiveOp
+RelationalOp

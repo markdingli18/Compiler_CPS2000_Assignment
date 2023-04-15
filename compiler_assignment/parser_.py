@@ -37,6 +37,10 @@ class Parser:
             value = self.parse_expression()
             self.expect("SEMICOLON")
             return ("RETURN", value)
+        elif self.match("PRINT_STATEMENT"):
+            expression = self.parse_expression()
+            self.expect("SEMICOLON")
+            return ("PRINT", expression)
         else:
             raise ParserError(f"Invalid statement at token {self.tokens[self.current_index]}")
         
@@ -45,7 +49,7 @@ class Parser:
     def parse_block(self):
         self.expect("COLON")
         statements = []
-        while self.current_index < len(self.tokens) and not self.check("ENDIF") and not self.check("ELSE"):
+        while self.current_index < len(self.tokens) and not self.check("ENDIF") and not self.check("ELSE") and not self.check("FUNCTION_DEF"):
             statements.append(self.parse_statement())
         return statements
     
@@ -110,52 +114,6 @@ class Parser:
             left = (op, left, right)
 
         return left
-    
-###########################################################################################################################################
-
-    def parse_function_definition(self):
-        name_token = self.tokens[self.current_index]
-        if name_token.token_type != "IDENTIFIER":
-            raise ParserError(f"Expected an identifier, found {name_token.token_type}")
-        name = name_token.lexeme
-        self.current_index += 1
-
-        if not self.check("OPEN_PAREN"):
-            raise ParserError(f"Expected an open parenthesis, found {self.tokens[self.current_index].token_type}")
-        self.current_index += 1
-
-        params = self.parse_parameters()
-
-        if not self.check("CLOSE_PAREN"):
-            raise ParserError(f"Expected a close parenthesis, found {self.tokens[self.current_index].token_type}")
-        self.current_index += 1
-
-        body = self.parse_block()
-        return ("FUNCTION_DEFINITION", name, params, body)
-
-    def parse_parameters(self):
-        params = []
-        while not self.check("CLOSE_PAREN"):
-            if self.match("IDENTIFIER"):
-                params.append(self.previous().lexeme)
-            if not self.match("COMMA"):
-                break
-        return params
-
-    def parse_function_call(self):
-        name = self.previous().lexeme
-        self.expect("OPEN_PAREN")
-        args = self.parse_arguments()
-        self.expect("CLOSE_PAREN")
-        return ("FUNCTION_CALL", name, args)
-
-    def parse_arguments(self):
-        args = []
-        while not self.check("CLOSE_PAREN"):
-            args.append(self.parse_expression())
-            if not self.match("COMMA"):
-                break
-        return args
 
 ###########################################################################################################################################
 
@@ -171,11 +129,47 @@ class Parser:
     
 ###########################################################################################################################################
 
+    def parse_function_definition(self):
+        self.expect("IDENTIFIER")
+        function_name = self.previous().lexeme
+        self.expect("OPEN_PAREN")
+        parameters = []
+
+        while not self.check("CLOSE_PAREN"):
+            if len(parameters) > 0:
+                self.expect("COMMA")
+            self.expect("IDENTIFIER")
+            parameters.append(self.previous().lexeme)
+
+        self.expect("CLOSE_PAREN")
+        body = self.parse_block()
+        return ("FUNCTION_DEF", function_name, parameters, body)
+    
+    def parse_function_call(self):
+        function_name = self.previous().lexeme
+        self.expect("OPEN_PAREN")
+        arguments = []
+
+        while not self.check("CLOSE_PAREN"):
+            if len(arguments) > 0:
+                self.expect("COMMA")
+            arguments.append(self.parse_expression())
+
+        self.expect("CLOSE_PAREN")
+        return ("FUNCTION_CALL", function_name, arguments)
+
+###########################################################################################################################################
+
     def parse_factor(self):
         if self.match("IDENTIFIER"):
-            return ("IDENTIFIER", self.previous().lexeme)
+            if self.check("OPEN_PAREN"):
+                return self.parse_function_call()
+            else:
+                return ("IDENTIFIER", self.previous().lexeme)
         elif self.match("INTEGER_LITERAL"):
             return ("INTEGER_LITERAL", int(self.previous().lexeme))
+        elif self.match("FLOAT_LITERAL"):
+            return ("FLOAT_LITERAL", float(self.previous().lexeme))
         elif self.match("BOOLEAN_LITERAL"):
             return ("BOOLEAN_LITERAL", self.previous().lexeme == "true")
         elif self.match("STRING_LITERAL"):
@@ -186,6 +180,7 @@ class Parser:
             return expr
         else:
             raise ParserError(f"Invalid factor at token {self.tokens[self.current_index]}")
+
         
 ###########################################################################################################################################
 
@@ -236,10 +231,7 @@ class ParserError(Exception):
 
 # Usage:
 source_code = """
-def add(x, y):
-    return x + y;
-
-result = add(5, 3);
+x = 1.23;
 """
 
 try:

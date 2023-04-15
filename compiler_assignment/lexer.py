@@ -21,6 +21,7 @@ class Lexer:
         "true": "BOOLEAN_LITERAL",
         "false": "BOOLEAN_LITERAL",
         "not": "LOGICAL_OPERATOR", 
+        "__print": "PRINT_STATEMENT",  # Add this line
     }
     
     def __init__(self, source_code):
@@ -164,6 +165,25 @@ class Lexer:
         for char in " \t\n":
             transition_table[(0, char)] = 37
             transition_table[(37, char)] = 37
+            
+        # Transitions for __print statement
+        transition_table[(0, '_')] = 47
+        transition_table[(47, '_')] = 48
+        transition_table[(48, 'p')] = 49
+        transition_table[(49, 'r')] = 50
+        transition_table[(50, 'i')] = 51
+        transition_table[(51, 'n')] = 52
+        transition_table[(52, 't')] = 53
+        
+        # Transitions for float literals
+        for char in "0123456789":
+            transition_table[(0, char)] = 2
+            transition_table[(2, char)] = 2
+
+        transition_table[(2, '.')] = 23
+        for char in "0123456789":
+            transition_table[(23, char)] = 24
+            transition_table[(24, char)] = 24
 
         return transition_table
 
@@ -301,6 +321,8 @@ class Lexer:
             return 'STRING_LITERAL'
         elif state == 23:
             return 'SINGLE_LINE_COMMENT'
+        elif state == 24:
+            return 'FLOAT_LITERAL'
         elif state == 27:
             return 'BLOCK_COMMENT'
         elif state == 28:
@@ -332,6 +354,8 @@ class Lexer:
             return 'OPEN_PAREN'
         elif state == 46:
             return 'CLOSE_PAREN'
+        elif state == 53:
+            return 'PRINT_STATEMENT'
         else:
             return None
 
@@ -382,16 +406,13 @@ class InvalidEscapeSequenceError(LexerError):
 
 # Usage:
 source_code = """
-def add(x, y):
-    return x + y;
-
-result = add(5, 3);
+x == 1.23;
 """
 
-#try:
-#    lexer = Lexer(source_code)
-#    tokens = lexer.tokenize()
-#    for token in tokens:
-#        print(token)
-#except LexerError as e:
-#    print(f"Error: {e}")
+try:
+    lexer = Lexer(source_code)
+    tokens = lexer.tokenize()
+    for token in tokens:
+        print(token)
+except LexerError as e:
+    print(f"Error: {e}")
