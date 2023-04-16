@@ -36,7 +36,7 @@ class Lexer:
 
         # Define the states and input characters
         states = range(32)
-        input_characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-*/%=<>!#&|()[]{},.;:'\" \t\n"
+        input_characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-*/%=<>!#()[]{},.;:'\" \t\n"
 
         # Initialize all transitions to -1
         for state in states:
@@ -83,11 +83,12 @@ class Lexer:
         transition_table[(0, '!')] = 7
         transition_table[(7, '=')] = 8
 
-       # Transitions for logical operators
-        transition_table[(0, '&')] = 15
-        transition_table[(15, '&')] = 16
-        transition_table[(0, '|')] = 17
-        transition_table[(17, '|')] = 18
+        # Transitions for logical operators
+        transition_table[(0, 'a')] = 15
+        transition_table[(15, 'n')] = 16
+        transition_table[(16, 'd')] = 18
+        transition_table[(0, 'o')] = 17
+        transition_table[(17, 'r')] = 18
 
         # Transitions for string literals
         transition_table[(0, '"')] = 19
@@ -307,11 +308,11 @@ class Lexer:
         elif state == 10:
             return 'RELATIONAL_OPERATOR'
         elif state == 11:
-            return 'SHIFT_OPERATOR'
+            return 'RELATIONAL_OPERATOR'
         elif state == 12:
             return 'RELATIONAL_OPERATOR'
         elif state == 13:
-            return 'SHIFT_OPERATOR'
+            return 'RELATIONAL_OPERATOR'
         elif state == 16:
             return 'LOGICAL_OPERATOR'
         elif state == 18:
@@ -411,12 +412,8 @@ class InvalidEscapeSequenceError(LexerError):
 
 # Usage:
 source_code = """
-x > y
-x < y
-x == y
-x != y
-x <= y
-x >= y
+(x > y) and (x < z);
+(x == y) or (x != z);
 """
 
 try:

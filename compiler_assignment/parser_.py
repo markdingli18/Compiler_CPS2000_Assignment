@@ -233,8 +233,8 @@ class ParserError(Exception):
 
 # Usage:
 source_code = """
-x = x <= y;
-x = x >= y;
+x = (x > y) and (x < z);
+y = (x == y) or (x != z);
 """
 
 try:
