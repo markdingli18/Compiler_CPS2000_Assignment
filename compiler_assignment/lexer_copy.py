@@ -73,19 +73,26 @@ class Lexer:
         for delimiter in delimiters:
             transition_table[(0, delimiter)] = 4
 
+
         # Transitions for relational operators
-        transition_table[(0, '<')] = 9
-        transition_table[(9, '=')] = 10
-        transition_table[(0, '>')] = 11
-        transition_table[(11, '=')] = 12
         transition_table[(0, '=')] = 5
         transition_table[(5, '=')] = 6
+
         transition_table[(0, '!')] = 7
         transition_table[(7, '=')] = 8
+
+        transition_table[(0, '<')] = 9
+        transition_table[(9, '=')] = 10
+        transition_table[(9, '<')] = 11
+
+        transition_table[(0, '>')] = 12
+        transition_table[(12, '=')] = 13
+        transition_table[(12, '>')] = 14
 
        # Transitions for logical operators
         transition_table[(0, '&')] = 15
         transition_table[(15, '&')] = 16
+
         transition_table[(0, '|')] = 17
         transition_table[(17, '|')] = 18
 
@@ -411,12 +418,7 @@ class InvalidEscapeSequenceError(LexerError):
 
 # Usage:
 source_code = """
-x > y
-x < y
-x == y
-x != y
-x <= y
-x >= y
+x = #1a2b3c;
 """
 
 try:

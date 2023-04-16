@@ -102,7 +102,7 @@ class Parser:
             left = (op, left, right)
 
         return left
-    
+
 ###########################################################################################################################################
 
     def parse_expression(self):
@@ -178,6 +178,8 @@ class Parser:
             expr = self.parse_expression()
             self.expect("CLOSE_PAREN")
             return expr
+        elif self.match("COLOR_LITERAL"):
+            return ("COLOR_LITERAL", self.previous().lexeme)
         else:
             raise ParserError(f"Invalid factor at token {self.tokens[self.current_index]}")
 
@@ -231,7 +233,8 @@ class ParserError(Exception):
 
 # Usage:
 source_code = """
-x = 1.23;
+x = x <= y;
+x = x >= y;
 """
 
 try:
