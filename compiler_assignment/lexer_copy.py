@@ -6,8 +6,6 @@ class Token:
     def __str__(self):
         return f"{self.token_type}({self.lexeme})"
 
-###########################################################################################################################################
-
 class Lexer:
             
     KEYWORDS = {
@@ -21,7 +19,8 @@ class Lexer:
         "true": "BOOLEAN_LITERAL",
         "false": "BOOLEAN_LITERAL",
         "not": "LOGICAL_OPERATOR", 
-        "__print": "PRINT_STATEMENT",
+        "__read": "READ_STATEMENT",
+        "__print": "PRINT_STATEMENT", 
     }
     
     def __init__(self, source_code):
@@ -36,7 +35,7 @@ class Lexer:
 
         # Define the states and input characters
         states = range(32)
-        input_characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-*/%=<>!#&|()[]{},.;:'\" \t\n"
+        input_characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-*/%=<>!#()[]{},.;:'\" \t\n"
 
         # Initialize all transitions to -1
         for state in states:
@@ -64,37 +63,47 @@ class Lexer:
 
         # Transitions for division and comments
         transition_table[(0, '/')] = 3
-        transition_table[(39, '/')] = 22
-        transition_table[(39, '*')] = 24
-        transition_table[(3, '=')] = 39  # Added this line
+        transition_table[(3, '/')] = 22  # Start of single-line comment
+        transition_table[(3, '*')] = 24  # Start of multi-line comment
+        transition_table[(3, '=')] = 23  # Division assignment operator (e.g. /=)
+        
+        # Transitions for single-line comments
+        transition_table[(22, '\n')] = 37  # End of single-line comment
+
+        for char in input_characters:
+            if char != '\n':
+                transition_table[(22, char)] = 22
+                
+        # Transitions for multi-line comments
+        transition_table[(24, '*')] = 25
+        transition_table[(25, '/')] = 37  # End of multi-line comment
+
+        for char in input_characters:
+            if char != '*' and char != '/':
+                transition_table[(24, char)] = 24
+                transition_table[(25, char)] = 24
 
         # Transitions for delimiters
         delimiters = "(){},.;[]"
         for delimiter in delimiters:
             transition_table[(0, delimiter)] = 4
 
-
         # Transitions for relational operators
+        transition_table[(0, '<')] = 9
+        transition_table[(9, '=')] = 10
+        transition_table[(0, '>')] = 11
+        transition_table[(11, '=')] = 12
         transition_table[(0, '=')] = 5
         transition_table[(5, '=')] = 6
-
         transition_table[(0, '!')] = 7
         transition_table[(7, '=')] = 8
 
-        transition_table[(0, '<')] = 9
-        transition_table[(9, '=')] = 10
-        transition_table[(9, '<')] = 11
-
-        transition_table[(0, '>')] = 12
-        transition_table[(12, '=')] = 13
-        transition_table[(12, '>')] = 14
-
-       # Transitions for logical operators
-        transition_table[(0, '&')] = 15
-        transition_table[(15, '&')] = 16
-
-        transition_table[(0, '|')] = 17
-        transition_table[(17, '|')] = 18
+        # Transitions for logical operators
+        transition_table[(0, 'a')] = 15
+        transition_table[(15, 'n')] = 16
+        transition_table[(16, 'd')] = 18
+        transition_table[(0, 'o')] = 17
+        transition_table[(17, 'r')] = 18
 
         # Transitions for string literals
         transition_table[(0, '"')] = 19
@@ -104,13 +113,6 @@ class Lexer:
             else:
                 transition_table[(19, char)] = 19
                 transition_table[(20, char)] = 20
-
-        # Transitions for single-line comments
-        transition_table[(22, '\n')] = 37  # Updated this line
-
-        # Transitions for block comments
-        transition_table[(25, '*')] = 26
-        transition_table[(26, '/')] = 27
 
         for char in input_characters:
             if char != '*' and char != '/':
@@ -165,15 +167,23 @@ class Lexer:
         for char in " \t\n":
             transition_table[(0, char)] = 37
             transition_table[(37, char)] = 37
-            
+        
+        # Transitions for __read statement
+        transition_table[(0, '_')] = 61  
+        transition_table[(61, '_')] = 62
+        transition_table[(62, 'r')] = 63
+        transition_table[(63, 'e')] = 64
+        transition_table[(64, 'a')] = 65
+        transition_table[(65, 'd')] = 66
+        
         # Transitions for __print statement
-        transition_table[(0, '_')] = 47
-        transition_table[(47, '_')] = 48
-        transition_table[(48, 'p')] = 49
-        transition_table[(49, 'r')] = 50
-        transition_table[(50, 'i')] = 51
-        transition_table[(51, 'n')] = 52
-        transition_table[(52, 't')] = 53
+        transition_table[(0, '_')] = 61  
+        transition_table[(61, '_')] = 62
+        transition_table[(62, 'p')] = 67  # Updated transition
+        transition_table[(67, 'r')] = 68
+        transition_table[(68, 'i')] = 69
+        transition_table[(69, 'n')] = 70
+        transition_table[(70, 't')] = 71
         
         # Transitions for float literals
         for char in "0123456789":
@@ -197,8 +207,6 @@ class Lexer:
 
         return transition_table
 
-###########################################################################################################################################
-
     def get_next_char(self):
         if self.position < len(self.source_code):
             # Get the character at the current position in the source code
@@ -220,8 +228,6 @@ class Lexer:
         else:
             # Return None if the end of the source code has been reached
             return None
-
-###########################################################################################################################################    
 
     def get_token(self):
         lexeme = ""
@@ -314,11 +320,11 @@ class Lexer:
         elif state == 10:
             return 'RELATIONAL_OPERATOR'
         elif state == 11:
-            return 'SHIFT_OPERATOR'
+            return 'RELATIONAL_OPERATOR'
         elif state == 12:
             return 'RELATIONAL_OPERATOR'
         elif state == 13:
-            return 'SHIFT_OPERATOR'
+            return 'RELATIONAL_OPERATOR'
         elif state == 16:
             return 'LOGICAL_OPERATOR'
         elif state == 18:
@@ -329,8 +335,6 @@ class Lexer:
             return 'STRING_LITERAL'
         elif state == 21:
             return 'STRING_LITERAL'
-        elif state == 23:
-            return 'SINGLE_LINE_COMMENT'
         elif state == 24:
             return 'FLOAT_LITERAL'
         elif state == 27:
@@ -368,10 +372,12 @@ class Lexer:
             return 'PRINT_STATEMENT'
         elif state == 60:
             return 'COLOR_LITERAL'
+        elif state == 66:
+            return 'READ_STATEMENT'
+        elif state == 71:
+            return 'PRINT_STATEMENT'
         else:
             return None
-
-###########################################################################################################################################
 
     def tokenize(self):
         tokens = []
@@ -379,11 +385,9 @@ class Lexer:
             token = self.get_token()
             if token is None or token.token_type == "END":
                 break
-            if token.token_type != "WHITESPACE":  # Exclude whitespace tokens
+            if token.token_type not in ["WHITESPACE", "SINGLE_LINE_COMMENT", "BLOCK_COMMENT"]:
                 tokens.append(token)
         return tokens
-
-###########################################################################################################################################
 
     def lex_identifier_or_keyword(self):
         while self.is_alphanumeric(self.peek()):
@@ -393,8 +397,6 @@ class Lexer:
         token_type = Lexer.KEYWORDS.get(text, "IDENTIFIER")
         self.add_token(token_type, text)
 
-
-###########################################################################################################################################
 
 class LexerError(Exception):
     pass
@@ -414,11 +416,9 @@ class InvalidEscapeSequenceError(LexerError):
         self.sequence = sequence
         super().__init__(f"Invalid escape sequence '{sequence}'")
 
-###########################################################################################################################################
-
 # Usage:
 source_code = """
-x = #1a2b3c;
+__print("jejejej");
 """
 
 try:

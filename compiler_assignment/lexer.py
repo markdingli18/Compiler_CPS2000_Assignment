@@ -21,7 +21,8 @@ class Lexer:
         "true": "BOOLEAN_LITERAL",
         "false": "BOOLEAN_LITERAL",
         "not": "LOGICAL_OPERATOR", 
-        "__print": "PRINT_STATEMENT",
+        "__read": "READ_STATEMENT",
+        "__print": "PRINT_STATEMENT", 
     }
     
     def __init__(self, source_code):
@@ -64,9 +65,25 @@ class Lexer:
 
         # Transitions for division and comments
         transition_table[(0, '/')] = 3
-        transition_table[(39, '/')] = 22
-        transition_table[(39, '*')] = 24
-        transition_table[(3, '=')] = 39  # Added this line
+        transition_table[(3, '/')] = 22  # Start of single-line comment
+        transition_table[(3, '*')] = 24  # Start of multi-line comment
+        transition_table[(3, '=')] = 23  # Division assignment operator (e.g. /=)
+        
+        # Transitions for single-line comments
+        transition_table[(22, '\n')] = 37  # End of single-line comment
+
+        for char in input_characters:
+            if char != '\n':
+                transition_table[(22, char)] = 22
+                
+        # Transitions for multi-line comments
+        transition_table[(24, '*')] = 25
+        transition_table[(25, '/')] = 37  # End of multi-line comment
+
+        for char in input_characters:
+            if char != '*' and char != '/':
+                transition_table[(24, char)] = 24
+                transition_table[(25, char)] = 24
 
         # Transitions for delimiters
         delimiters = "(){},.;[]"
@@ -98,13 +115,6 @@ class Lexer:
             else:
                 transition_table[(19, char)] = 19
                 transition_table[(20, char)] = 20
-
-        # Transitions for single-line comments
-        transition_table[(22, '\n')] = 37  # Updated this line
-
-        # Transitions for block comments
-        transition_table[(25, '*')] = 26
-        transition_table[(26, '/')] = 27
 
         for char in input_characters:
             if char != '*' and char != '/':
@@ -159,15 +169,23 @@ class Lexer:
         for char in " \t\n":
             transition_table[(0, char)] = 37
             transition_table[(37, char)] = 37
-            
+        
+        # Transitions for __read statement
+        transition_table[(0, '_')] = 61  
+        transition_table[(61, '_')] = 62
+        transition_table[(62, 'r')] = 63
+        transition_table[(63, 'e')] = 64
+        transition_table[(64, 'a')] = 65
+        transition_table[(65, 'd')] = 66
+        
         # Transitions for __print statement
-        transition_table[(0, '_')] = 47
-        transition_table[(47, '_')] = 48
-        transition_table[(48, 'p')] = 49
-        transition_table[(49, 'r')] = 50
-        transition_table[(50, 'i')] = 51
-        transition_table[(51, 'n')] = 52
-        transition_table[(52, 't')] = 53
+        transition_table[(0, '_')] = 61  
+        transition_table[(61, '_')] = 62
+        transition_table[(62, 'p')] = 67  # Updated transition
+        transition_table[(67, 'r')] = 68
+        transition_table[(68, 'i')] = 69
+        transition_table[(69, 'n')] = 70
+        transition_table[(70, 't')] = 71
         
         # Transitions for float literals
         for char in "0123456789":
@@ -323,8 +341,6 @@ class Lexer:
             return 'STRING_LITERAL'
         elif state == 21:
             return 'STRING_LITERAL'
-        elif state == 23:
-            return 'SINGLE_LINE_COMMENT'
         elif state == 24:
             return 'FLOAT_LITERAL'
         elif state == 27:
@@ -362,6 +378,10 @@ class Lexer:
             return 'PRINT_STATEMENT'
         elif state == 60:
             return 'COLOR_LITERAL'
+        elif state == 66:
+            return 'READ_STATEMENT'
+        elif state == 71:
+            return 'PRINT_STATEMENT'
         else:
             return None
 
@@ -373,7 +393,7 @@ class Lexer:
             token = self.get_token()
             if token is None or token.token_type == "END":
                 break
-            if token.token_type != "WHITESPACE":  # Exclude whitespace tokens
+            if token.token_type not in ["WHITESPACE", "SINGLE_LINE_COMMENT", "BLOCK_COMMENT"]:
                 tokens.append(token)
         return tokens
 
@@ -412,14 +432,13 @@ class InvalidEscapeSequenceError(LexerError):
 
 # Usage:
 source_code = """
-(x > y) and (x < z);
-(x == y) or (x != z);
+__print("jejejej");
 """
 
-try:
-    lexer = Lexer(source_code)
-    tokens = lexer.tokenize()
-    for token in tokens:
-        print(token)
-except LexerError as e:
-    print(f"Error: {e}")
+#try:
+#    lexer = Lexer(source_code)
+#    tokens = lexer.tokenize()
+#    for token in tokens:
+#        print(token)
+#except LexerError as e:
+#    print(f"Error: {e}")

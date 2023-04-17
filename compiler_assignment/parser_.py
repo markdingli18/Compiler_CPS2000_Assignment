@@ -163,7 +163,10 @@ class Parser:
     def parse_factor(self):
         if self.match("IDENTIFIER"):
             if self.check("OPEN_PAREN"):
-                return self.parse_function_call()
+                if self.previous().lexeme == "__read":
+                    return self.parse_read_call()
+                else:
+                    return self.parse_function_call()
             else:
                 return ("IDENTIFIER", self.previous().lexeme)
         elif self.match("INTEGER_LITERAL"):
@@ -180,9 +183,10 @@ class Parser:
             return expr
         elif self.match("COLOR_LITERAL"):
             return ("COLOR_LITERAL", self.previous().lexeme)
+        elif self.match("READ_STATEMENT"):
+            return self.parse_read_call()
         else:
             raise ParserError(f"Invalid factor at token {self.tokens[self.current_index]}")
-
         
 ###########################################################################################################################################
 
@@ -195,6 +199,21 @@ class Parser:
             left = (op, left, right)
 
         return left
+
+###########################################################################################################################################
+    
+    def parse_read_call(self):
+        function_name = self.previous().lexeme
+        self.expect("OPEN_PAREN")
+        arguments = []
+
+        while not self.check("CLOSE_PAREN"):
+            if len(arguments) > 0:
+                self.expect("COMMA")
+            arguments.append(self.parse_expression())
+
+        self.expect("CLOSE_PAREN")
+        return ("READ_STATEMENT", function_name, arguments)
 
 ###########################################################################################################################################
 
@@ -233,26 +252,25 @@ class ParserError(Exception):
 
 # Usage:
 source_code = """
-x = (x > y) and (x < z);
-y = (x == y) or (x != z);
+__read(3,5);
 """
 
-try:
-    lexer = Lexer(source_code)
-    tokens = lexer.tokenize()
-    print("\nLexer:\n")
-    for token in tokens:
-        print(token)
-
-    parser = Parser(tokens)
-    parsed_program = parser.parse()
-    print("\n" + "-"*100)
-    print("\nParsed program:\n")
-    print(parsed_program)
-
-except LexerError as e:
-    print(f"Error: {e}")
-except ParserError as e:
-    print(f"Error: {e}")
-
-print("\n" + "-"*100)
+#try:
+#    lexer = Lexer(source_code)
+#    tokens = lexer.tokenize()
+#    print("\nLexer:\n")
+#    for token in tokens:
+#        print(token)
+#
+#    parser = Parser(tokens)
+#    parsed_program = parser.parse()
+#    print("\n" + "-"*100)
+#    print("\nParsed program:\n")
+#    print(parsed_program)
+#
+#except LexerError as e:
+#    print(f"Error: {e}")
+#except ParserError as e:
+#    print(f"Error: {e}")
+#
+#print("\n" + "-"*100)
