@@ -22,7 +22,10 @@ class Lexer:
         "false": "BOOLEAN_LITERAL",
         "not": "LOGICAL_OPERATOR", 
         "__read": "READ_STATEMENT",
-        "__print": "PRINT_STATEMENT", 
+        "__print": "PRINT_STATEMENT",
+        "__delay": "DELAY_STATEMENT", 
+        "__width": "PadWidth", 
+        "__height": "PadHeight", 
     }
     
     def __init__(self, source_code):
@@ -136,12 +139,12 @@ class Lexer:
         transition_table[(29, 'u')] = 30
         transition_table[(30, 'e')] = 31
 
-        # Transitions for 'false' boolean literal
-        transition_table[(0, 'f')] = 32
-        transition_table[(32, 'a')] = 33
-        transition_table[(33, 'l')] = 34
-        transition_table[(34, 's')] = 35
-        transition_table[(35, 'e')] = 36
+        # Transitions for 'false' keyword
+        transition_table[(0, 'f')] = 50
+        transition_table[(50, 'a')] = 51
+        transition_table[(51, 'l')] = 52
+        transition_table[(52, 's')] = 53
+        transition_table[(53, 'e')] = 36  # Reuse state 36 for 'false' boolean
         
         # Transitions for assignment and equality operators
         transition_table[(0, '=')] = 5
@@ -181,16 +184,49 @@ class Lexer:
         # Transitions for __print statement
         transition_table[(0, '_')] = 61  
         transition_table[(61, '_')] = 62
-        transition_table[(62, 'p')] = 67  # Updated transition
+        transition_table[(62, 'p')] = 67 
         transition_table[(67, 'r')] = 68
         transition_table[(68, 'i')] = 69
         transition_table[(69, 'n')] = 70
         transition_table[(70, 't')] = 71
         
+        # Transitions for __delay statement
+        transition_table[(0, '_')] = 61  
+        transition_table[(61, '_')] = 62
+        transition_table[(62, 'd')] = 63
+        transition_table[(63, 'e')] = 64
+        transition_table[(64, 'l')] = 65
+        transition_table[(65, 'a')] = 66
+        transition_table[(66, 'y')] = 67
+        
+        # Transitions for __width statement
+        transition_table[(0, '_')] = 61  
+        transition_table[(61, '_')] = 62
+        transition_table[(62, 'w')] = 66
+        transition_table[(66, 'i')] = 67
+        transition_table[(67, 'd')] = 68
+        transition_table[(68, 't')] = 69
+        transition_table[(69, 'h')] = 70
+        
+         # Transitions for __height statement
+        transition_table[(0, '_')] = 61  
+        transition_table[(61, '_')] = 62
+        transition_table[(62, 'h')] = 63
+        transition_table[(63, 'e')] = 64
+        transition_table[(64, 'i')] = 65
+        transition_table[(65, 'g')] = 66
+        transition_table[(66, 'h')] = 67
+        transition_table[(67, 't')] = 68
+
         # Transitions for float literals
         for char in "0123456789":
             transition_table[(0, char)] = 2
             transition_table[(2, char)] = 2
+
+        transition_table[(2, '.')] = 23
+        for char in "0123456789":
+            transition_table[(23, char)] = 24
+            transition_table[(24, char)] = 24
             
         # Transitions for colour literals
         transition_table[(0, '#')] = 54
@@ -201,11 +237,26 @@ class Lexer:
             transition_table[(57, char)] = 58
             transition_table[(58, char)] = 59
             transition_table[(59, char)] = 60
-
-        transition_table[(2, '.')] = 23
-        for char in "0123456789":
-            transition_table[(23, char)] = 24
-            transition_table[(24, char)] = 24
+            
+        # Transitions for type keywords
+        transition_table[(0, 'f')] = 74
+        transition_table[(74, 'l')] = 75
+        transition_table[(75, 'o')] = 76
+        transition_table[(76, 'a')] = 77
+        transition_table[(77, 't')] = 78
+        transition_table[(0, 'i')] = 79
+        transition_table[(79, 'n')] = 80
+        transition_table[(80, 't')] = 81
+        transition_table[(0, 'b')] = 82
+        transition_table[(82, 'o')] = 83
+        transition_table[(83, 'o')] = 84
+        transition_table[(84, 'l')] = 85
+        transition_table[(0, 'c')] = 86
+        transition_table[(86, 'o')] = 87
+        transition_table[(87, 'l')] = 88
+        transition_table[(88, 'o')] = 89
+        transition_table[(89, 'u')] = 90
+        transition_table[(90, 'r')] = 91
 
         return transition_table
 
@@ -345,12 +396,18 @@ class Lexer:
             return 'FLOAT_LITERAL'
         elif state == 27:
             return 'BLOCK_COMMENT'
-        elif state == 28:
-            return 'BOOLEAN_LITERAL'
+        elif state == 28:  # Transition state for 'true' boolean
+            if lexeme.lower() == "true":
+                return 'BOOLEAN_LITERAL'
+            else:
+                return None
         elif state == 31:
             return 'BOOLEAN_LITERAL'
-        elif state == 36:
-            return 'BOOLEAN_LITERAL'
+        elif state == 36:  # Transition state for 'false' boolean
+            if lexeme.lower() == "false":
+                return 'BOOLEAN_LITERAL'
+            else:
+                return None
         elif state == 37:
             return 'WHITESPACE'
         elif state == 38:
@@ -380,8 +437,24 @@ class Lexer:
             return 'COLOR_LITERAL'
         elif state == 66:
             return 'READ_STATEMENT'
+        elif state == 67:
+            return 'DELAY_STATEMENT'
+        elif state == 70:
+            return 'PadWidth'
+        elif state == 68:
+            return 'PadHeight'
         elif state == 71:
             return 'PRINT_STATEMENT'
+        elif state == 73:
+            return 'FLOAT_LITERAL'
+        elif state == 78:
+            return 'TYPE_FLOAT'
+        elif state == 81:
+            return 'TYPE_INT'
+        elif state == 85:
+            return 'TYPE_BOOL'
+        elif state == 91:
+            return 'TYPE_COLOUR'
         else:
             return None
 
@@ -432,13 +505,14 @@ class InvalidEscapeSequenceError(LexerError):
 
 # Usage:
 source_code = """
-__print("jejejej");
+__width(x);
+__height(y);
 """
 
-#try:
-#    lexer = Lexer(source_code)
-#    tokens = lexer.tokenize()
-#    for token in tokens:
-#        print(token)
-#except LexerError as e:
-#    print(f"Error: {e}")
+try:
+    lexer = Lexer(source_code)
+    tokens = lexer.tokenize()
+    for token in tokens:
+        print(token)
+except LexerError as e:
+    print(f"Error: {e}")

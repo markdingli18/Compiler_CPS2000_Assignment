@@ -4,6 +4,7 @@ class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
         self.current_index = 0
+        self.symbol_table = {}  # Add a symbol table
         
 ###########################################################################################################################################
 
@@ -16,7 +17,9 @@ class Parser:
 ###########################################################################################################################################
 
     def parse_statement(self):
-        if self.match("IDENTIFIER") and self.match("ASSIGNMENT_OPERATOR"):
+        if self.check("TYPE_INT", "TYPE_BOOL", "TYPE_FLOAT"):
+            return self.parse_declaration()
+        elif self.match("IDENTIFIER") and self.match("ASSIGNMENT_OPERATOR"):
             identifier = self.previous().lexeme
             value = self.parse_expression()
             self.expect("SEMICOLON")
@@ -41,6 +44,22 @@ class Parser:
             expression = self.parse_expression()
             self.expect("SEMICOLON")
             return ("PRINT", expression)
+        elif self.match("DELAY_STATEMENT"):
+            expression = self.parse_expression()
+            self.expect("SEMICOLON")
+            return ("DELAY", expression)
+        elif self.match("PadWidth"):
+            expression = self.parse_expression()
+            self.expect("SEMICOLON")
+            return ("WIDTH", expression)
+        elif self.match("PadHeight"):
+            expression = self.parse_expression()
+            self.expect("SEMICOLON")
+            return ("HEIGHT", expression)
+        elif self.match("READ_STATEMENT"):
+            expression = self.parse_expression()
+            self.expect("SEMICOLON")
+            return ("READ", expression)
         else:
             raise ParserError(f"Invalid statement at token {self.tokens[self.current_index]}")
         
@@ -53,6 +72,29 @@ class Parser:
             statements.append(self.parse_statement())
         return statements
     
+###########################################################################################################################################
+    
+    def parse_declaration(self):
+        var_type = self.tokens[self.current_index].token_type
+        self.match(var_type)
+        self.expect("IDENTIFIER")
+        identifier = self.previous().lexeme
+
+        # Check for existing declarations and raise an error if the identifier is already in use
+        if identifier in self.symbol_table:
+            raise ParserError(f"Variable '{identifier}' is already declared")
+
+        # Add the variable to the symbol table
+        self.symbol_table[identifier] = var_type
+
+        if self.match("ASSIGNMENT_OPERATOR"):
+            value = self.parse_expression()
+            self.expect("SEMICOLON")
+            return ("DECLARATION", var_type, identifier, value)
+        else:
+            self.expect("SEMICOLON")
+            return ("DECLARATION", var_type, identifier)
+
 ###########################################################################################################################################
 
     def parse_if(self):
@@ -235,8 +277,8 @@ class Parser:
         
 ###########################################################################################################################################
 
-    def check(self, token_type):
-        return self.current_index < len(self.tokens) and self.tokens[self.current_index].token_type == token_type
+    def check(self, *token_types):
+        return self.current_index < len(self.tokens) and self.tokens[self.current_index].token_type in token_types
     
 ###########################################################################################################################################
 
@@ -252,25 +294,25 @@ class ParserError(Exception):
 
 # Usage:
 source_code = """
-__read(3,5);
+__read(x);
 """
 
-#try:
-#    lexer = Lexer(source_code)
-#    tokens = lexer.tokenize()
-#    print("\nLexer:\n")
-#    for token in tokens:
-#        print(token)
-#
-#    parser = Parser(tokens)
-#    parsed_program = parser.parse()
-#    print("\n" + "-"*100)
-#    print("\nParsed program:\n")
-#    print(parsed_program)
-#
-#except LexerError as e:
-#    print(f"Error: {e}")
-#except ParserError as e:
-#    print(f"Error: {e}")
-#
-#print("\n" + "-"*100)
+try:
+    lexer = Lexer(source_code)
+    tokens = lexer.tokenize()
+    print("\nLexer:\n")
+    for token in tokens:
+        print(token)
+
+    parser = Parser(tokens)
+    parsed_program = parser.parse()
+    print("\n" + "-"*100)
+    print("\nParsed program:\n")
+    print(parsed_program)
+
+except LexerError as e:
+    print(f"Error: {e}")
+except ParserError as e:
+    print(f"Error: {e}")
+
+print("\n" + "-"*100)

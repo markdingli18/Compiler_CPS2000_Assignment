@@ -5,7 +5,7 @@ class Token:
 
     def __str__(self):
         return f"{self.token_type}({self.lexeme})"
-
+    
 class Lexer:
             
     KEYWORDS = {
@@ -21,6 +21,7 @@ class Lexer:
         "not": "LOGICAL_OPERATOR", 
         "__read": "READ_STATEMENT",
         "__print": "PRINT_STATEMENT", 
+        "__delay": "DELAY_STATEMENT", 
     }
     
     def __init__(self, source_code):
@@ -33,16 +34,13 @@ class Lexer:
     def build_transition_table(self):
         transition_table = {}
 
-        # Define the states and input characters
         states = range(32)
         input_characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-*/%=<>!#()[]{},.;:'\" \t\n"
 
-        # Initialize all transitions to -1
         for state in states:
             for char in input_characters:
                 transition_table[(state, char)] = -1
 
-        # Transitions for identifiers
         for char in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ":
             transition_table[(0, char)] = 1
         for char in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789":
@@ -51,30 +49,25 @@ class Lexer:
         transition_table[(0, '_')] = 1
         transition_table[(1, '_')] = 1
 
-        # Transitions for integer literals
         for char in "0123456789":
             transition_table[(0, char)] = 2
             transition_table[(2, char)] = 2
 
-        # Transitions for operators
         operators = "+-*%"
         for op in operators:
             transition_table[(0, op)] = 3
 
-        # Transitions for division and comments
         transition_table[(0, '/')] = 3
         transition_table[(3, '/')] = 22  # Start of single-line comment
         transition_table[(3, '*')] = 24  # Start of multi-line comment
         transition_table[(3, '=')] = 23  # Division assignment operator (e.g. /=)
         
-        # Transitions for single-line comments
         transition_table[(22, '\n')] = 37  # End of single-line comment
 
         for char in input_characters:
             if char != '\n':
                 transition_table[(22, char)] = 22
                 
-        # Transitions for multi-line comments
         transition_table[(24, '*')] = 25
         transition_table[(25, '/')] = 37  # End of multi-line comment
 
@@ -83,12 +76,10 @@ class Lexer:
                 transition_table[(24, char)] = 24
                 transition_table[(25, char)] = 24
 
-        # Transitions for delimiters
         delimiters = "(){},.;[]"
         for delimiter in delimiters:
             transition_table[(0, delimiter)] = 4
 
-        # Transitions for relational operators
         transition_table[(0, '<')] = 9
         transition_table[(9, '=')] = 10
         transition_table[(0, '>')] = 11
@@ -98,14 +89,12 @@ class Lexer:
         transition_table[(0, '!')] = 7
         transition_table[(7, '=')] = 8
 
-        # Transitions for logical operators
         transition_table[(0, 'a')] = 15
         transition_table[(15, 'n')] = 16
         transition_table[(16, 'd')] = 18
         transition_table[(0, 'o')] = 17
         transition_table[(17, 'r')] = 18
 
-        # Transitions for string literals
         transition_table[(0, '"')] = 19
         for char in input_characters:
             if char == '"':
@@ -119,7 +108,6 @@ class Lexer:
                 transition_table[(25, char)] = 25
                 transition_table[(26, char)] = 25
                 
-        # Transitions for quotes        
         transition_table[(0, "'")] = 21
         for char in input_characters:
             if char == "'":
@@ -128,47 +116,38 @@ class Lexer:
                 transition_table[(21, char)] = 21
                 transition_table[(19, char)] = 19
 
-        # Transitions for boolean literals
         transition_table[(0, 't')] = 28
         transition_table[(28, 'r')] = 29
         transition_table[(29, 'u')] = 30
         transition_table[(30, 'e')] = 31
 
-        # Transitions for 'false' boolean literal
-        transition_table[(0, 'f')] = 32
-        transition_table[(32, 'a')] = 33
-        transition_table[(33, 'l')] = 34
-        transition_table[(34, 's')] = 35
-        transition_table[(35, 'e')] = 36
+        transition_table[(0, 'f')] = 50
+        transition_table[(50, 'a')] = 51
+        transition_table[(51, 'l')] = 52
+        transition_table[(52, 's')] = 53
+        transition_table[(53, 'e')] = 36  
         
-        # Transitions for assignment and equality operators
         transition_table[(0, '=')] = 5
         transition_table[(5, '=')] = 6
         
-        # Transitions for arrays and dictionaries
         transition_table[(0, '[')] = 38
         transition_table[(0, '{')] = 39
         transition_table[(38, ']')] = 40
         transition_table[(39, '}')] = 41
         
-        # Transitions for function definitions
         transition_table[(0, 'd')] = 42
         transition_table[(42, 'e')] = 43
         transition_table[(43, 'f')] = 44
 
-        # Transitions for function calls
         transition_table[(0, '(')] = 45
         transition_table[(0, ')')] = 46
         
-        # Transitions for colon
         transition_table[(0, ':')] = 41         
 
-        # Transitions for whitespace
         for char in " \t\n":
             transition_table[(0, char)] = 37
             transition_table[(37, char)] = 37
         
-        # Transitions for __read statement
         transition_table[(0, '_')] = 61  
         transition_table[(61, '_')] = 62
         transition_table[(62, 'r')] = 63
@@ -176,19 +155,31 @@ class Lexer:
         transition_table[(64, 'a')] = 65
         transition_table[(65, 'd')] = 66
         
-        # Transitions for __print statement
         transition_table[(0, '_')] = 61  
         transition_table[(61, '_')] = 62
-        transition_table[(62, 'p')] = 67  # Updated transition
+        transition_table[(62, 'p')] = 67
         transition_table[(67, 'r')] = 68
         transition_table[(68, 'i')] = 69
         transition_table[(69, 'n')] = 70
         transition_table[(70, 't')] = 71
         
-        # Transitions for float literals
+        # delay
+        transition_table[(0, '_')] = 61  
+        transition_table[(61, '_')] = 62
+        transition_table[(62, 'd')] = 63
+        transition_table[(63, 'e')] = 64
+        transition_table[(64, 'l')] = 65
+        transition_table[(65, 'a')] = 66
+        transition_table[(66, 'y')] = 67
+        
         for char in "0123456789":
             transition_table[(0, char)] = 2
             transition_table[(2, char)] = 2
+
+        transition_table[(2, '.')] = 23
+        for char in "0123456789":
+            transition_table[(23, char)] = 24
+            transition_table[(24, char)] = 24
             
         # Transitions for colour literals
         transition_table[(0, '#')] = 54
@@ -199,13 +190,29 @@ class Lexer:
             transition_table[(57, char)] = 58
             transition_table[(58, char)] = 59
             transition_table[(59, char)] = 60
-
-        transition_table[(2, '.')] = 23
-        for char in "0123456789":
-            transition_table[(23, char)] = 24
-            transition_table[(24, char)] = 24
+            
+        # Transitions for type keywords
+        transition_table[(0, 'f')] = 74
+        transition_table[(74, 'l')] = 75
+        transition_table[(75, 'o')] = 76
+        transition_table[(76, 'a')] = 77
+        transition_table[(77, 't')] = 78
+        transition_table[(0, 'i')] = 79
+        transition_table[(79, 'n')] = 80
+        transition_table[(80, 't')] = 81
+        transition_table[(0, 'b')] = 82
+        transition_table[(82, 'o')] = 83
+        transition_table[(83, 'o')] = 84
+        transition_table[(84, 'l')] = 85
+        transition_table[(0, 'c')] = 86
+        transition_table[(86, 'o')] = 87
+        transition_table[(87, 'l')] = 88
+        transition_table[(88, 'o')] = 89
+        transition_table[(89, 'u')] = 90
+        transition_table[(90, 'r')] = 91
 
         return transition_table
+
 
     def get_next_char(self):
         if self.position < len(self.source_code):
@@ -277,8 +284,6 @@ class Lexer:
                     self.current_state = next_state
                     lexeme += char
 
-###########################################################################################################################################
-
     def get_token_type_from_state(self, state, lexeme):
         if state == 1:
             # Check if the lexeme is a keyword
@@ -339,12 +344,18 @@ class Lexer:
             return 'FLOAT_LITERAL'
         elif state == 27:
             return 'BLOCK_COMMENT'
-        elif state == 28:
-            return 'BOOLEAN_LITERAL'
+        elif state == 28:  # Transition state for 'true' boolean
+            if lexeme.lower() == "true":
+                return 'BOOLEAN_LITERAL'
+            else:
+                return None
         elif state == 31:
             return 'BOOLEAN_LITERAL'
-        elif state == 36:
-            return 'BOOLEAN_LITERAL'
+        elif state == 36:  # Transition state for 'false' boolean
+            if lexeme.lower() == "false":
+                return 'BOOLEAN_LITERAL'
+            else:
+                return None
         elif state == 37:
             return 'WHITESPACE'
         elif state == 38:
@@ -374,8 +385,20 @@ class Lexer:
             return 'COLOR_LITERAL'
         elif state == 66:
             return 'READ_STATEMENT'
+        elif state == 67:
+            return 'DELAY_STATEMENT'
         elif state == 71:
             return 'PRINT_STATEMENT'
+        elif state == 73:
+            return 'FLOAT_LITERAL'
+        elif state == 78:
+            return 'TYPE_FLOAT'
+        elif state == 81:
+            return 'TYPE_INT'
+        elif state == 85:
+            return 'TYPE_BOOL'
+        elif state == 91:
+            return 'TYPE_COLOUR'
         else:
             return None
 
@@ -397,7 +420,6 @@ class Lexer:
         token_type = Lexer.KEYWORDS.get(text, "IDENTIFIER")
         self.add_token(token_type, text)
 
-
 class LexerError(Exception):
     pass
 
@@ -418,7 +440,7 @@ class InvalidEscapeSequenceError(LexerError):
 
 # Usage:
 source_code = """
-__print("jejejej");
+__delay(x);
 """
 
 try:
