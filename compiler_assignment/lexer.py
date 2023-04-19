@@ -24,8 +24,12 @@ class Lexer:
         "__read": "READ_STATEMENT",
         "__print": "PRINT_STATEMENT",
         "__delay": "DELAY_STATEMENT", 
-        "__width": "PadWidth", 
-        "__height": "PadHeight", 
+        "__width": "PAD_WIDTH", 
+        "__height": "PAD_HEIGHT", 
+        'let': 'LET',
+        'for': 'FOR',
+        "__pixelr": "PIXELR_STATEMENT",
+        "__pixel": "PIXEL_STATEMENT",
     }
     
     def __init__(self, source_code):
@@ -144,7 +148,7 @@ class Lexer:
         transition_table[(50, 'a')] = 51
         transition_table[(51, 'l')] = 52
         transition_table[(52, 's')] = 53
-        transition_table[(53, 'e')] = 36  # Reuse state 36 for 'false' boolean
+        transition_table[(53, 'e')] = 36  
         
         # Transitions for assignment and equality operators
         transition_table[(0, '=')] = 5
@@ -189,7 +193,17 @@ class Lexer:
         transition_table[(68, 'i')] = 69
         transition_table[(69, 'n')] = 70
         transition_table[(70, 't')] = 71
-        
+
+        # Transitions for __pixelr statement
+        transition_table[(0, '_')] = 61
+        transition_table[(61, '_')] = 62
+        transition_table[(62, 'p')] = 67
+        transition_table[(67, 'i')] = 68
+        transition_table[(68, 'x')] = 69
+        transition_table[(69, 'e')] = 70
+        transition_table[(70, 'l')] = 71
+        transition_table[(71, 'r')] = 72
+
         # Transitions for __delay statement
         transition_table[(0, '_')] = 61  
         transition_table[(61, '_')] = 62
@@ -257,6 +271,11 @@ class Lexer:
         transition_table[(88, 'o')] = 89
         transition_table[(89, 'u')] = 90
         transition_table[(90, 'r')] = 91
+        
+        # For loop
+        transition_table[(0, 'f')] = 21
+        transition_table[(21, 'o')] = 22
+        transition_table[(22, 'r')] = 23
 
         return transition_table
 
@@ -392,18 +411,20 @@ class Lexer:
             return 'STRING_LITERAL'
         elif state == 21:
             return 'STRING_LITERAL'
+        if state == 23:
+            return 'FOR'
         elif state == 24:
             return 'FLOAT_LITERAL'
         elif state == 27:
             return 'BLOCK_COMMENT'
-        elif state == 28:  # Transition state for 'true' boolean
+        elif state == 28: 
             if lexeme.lower() == "true":
                 return 'BOOLEAN_LITERAL'
             else:
                 return None
         elif state == 31:
             return 'BOOLEAN_LITERAL'
-        elif state == 36:  # Transition state for 'false' boolean
+        elif state == 36:
             if lexeme.lower() == "false":
                 return 'BOOLEAN_LITERAL'
             else:
@@ -414,9 +435,9 @@ class Lexer:
             return 'ARRAY_INDEX'
         elif state == 39:
             if lexeme == '{':
-                return 'DICTIONARY_START'
+                return 'LEFT_BRACE'
             elif lexeme == '}':
-                return 'DICTIONARY_END'
+                return 'RIGHT_BRACE'
             else:
                 return 'DICTIONARY'
         elif state == 41:
@@ -440,11 +461,13 @@ class Lexer:
         elif state == 67:
             return 'DELAY_STATEMENT'
         elif state == 70:
-            return 'PadWidth'
+            return 'PAD_WIDTH'
         elif state == 68:
-            return 'PadHeight'
+            return 'PAD_HEIGHT'
         elif state == 71:
             return 'PRINT_STATEMENT'
+        elif state == 72:
+            return 'PIXEL_STATEMENT'
         elif state == 73:
             return 'FLOAT_LITERAL'
         elif state == 78:
@@ -505,14 +528,15 @@ class InvalidEscapeSequenceError(LexerError):
 
 # Usage:
 source_code = """
-__width(x);
-__height(y);
+for(let x: int = 0; x>10; x++){
+    __print("hello");
+}
 """
 
-try:
-    lexer = Lexer(source_code)
-    tokens = lexer.tokenize()
-    for token in tokens:
-        print(token)
-except LexerError as e:
-    print(f"Error: {e}")
+#try:
+#    lexer = Lexer(source_code)
+#    tokens = lexer.tokenize()
+#    for token in tokens:
+#        print(token)
+#except LexerError as e:
+#    print(f"Error: {e}")
