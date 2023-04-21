@@ -5,13 +5,11 @@ class Token:
 
     def __str__(self):
         return f"{self.token_type}({self.lexeme})"
-    
 class Lexer:
             
     KEYWORDS = {
         "if": "IF",
         "else": "ELSE",
-        "elif": "ELIF",
         "while": "WHILE",
         "for": "FOR",
         "return": "RETURN",
@@ -20,66 +18,57 @@ class Lexer:
         "false": "BOOLEAN_LITERAL",
         "not": "LOGICAL_OPERATOR", 
         "__read": "READ_STATEMENT",
-        "__print": "PRINT_STATEMENT", 
+        "__print": "PRINT_STATEMENT",
         "__delay": "DELAY_STATEMENT", 
+        "__width": "PAD_WIDTH", 
+        "__height": "PAD_HEIGHT", 
+        'let': 'LET',
+        'for': 'FOR',
+        "__pixelr": "PIXELR_STATEMENT",
+        "__pixel": "PIXEL_STATEMENT",
     }
-    
     def __init__(self, source_code):
         self.source_code = source_code
         self.transition_table = self.build_transition_table()
         self.current_state = 0
         self.position = 0
         self.open_quote = None
-
     def build_transition_table(self):
         transition_table = {}
-
         states = range(32)
         input_characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-*/%=<>!#()[]{},.;:'\" \t\n"
-
         for state in states:
             for char in input_characters:
                 transition_table[(state, char)] = -1
-
         for char in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ":
             transition_table[(0, char)] = 1
         for char in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789":
             transition_table[(1, char)] = 1
-            
         transition_table[(0, '_')] = 1
         transition_table[(1, '_')] = 1
-
         for char in "0123456789":
             transition_table[(0, char)] = 2
             transition_table[(2, char)] = 2
-
         operators = "+-*%"
         for op in operators:
             transition_table[(0, op)] = 3
-
         transition_table[(0, '/')] = 3
-        transition_table[(3, '/')] = 22  # Start of single-line comment
-        transition_table[(3, '*')] = 24  # Start of multi-line comment
-        transition_table[(3, '=')] = 23  # Division assignment operator (e.g. /=)
-        
-        transition_table[(22, '\n')] = 37  # End of single-line comment
-
+        transition_table[(3, '/')] = 22  
+        transition_table[(3, '*')] = 24  
+        transition_table[(3, '=')] = 23  
+        transition_table[(22, '\n')] = 37  
         for char in input_characters:
             if char != '\n':
-                transition_table[(22, char)] = 22
-                
+                transition_table[(22, char)] = 22 
         transition_table[(24, '*')] = 25
-        transition_table[(25, '/')] = 37  # End of multi-line comment
-
+        transition_table[(25, '/')] = 37
         for char in input_characters:
             if char != '*' and char != '/':
                 transition_table[(24, char)] = 24
                 transition_table[(25, char)] = 24
-
         delimiters = "(){},.;[]"
         for delimiter in delimiters:
             transition_table[(0, delimiter)] = 4
-
         transition_table[(0, '<')] = 9
         transition_table[(9, '=')] = 10
         transition_table[(0, '>')] = 11
@@ -88,13 +77,11 @@ class Lexer:
         transition_table[(5, '=')] = 6
         transition_table[(0, '!')] = 7
         transition_table[(7, '=')] = 8
-
         transition_table[(0, 'a')] = 15
         transition_table[(15, 'n')] = 16
         transition_table[(16, 'd')] = 18
         transition_table[(0, 'o')] = 17
         transition_table[(17, 'r')] = 18
-
         transition_table[(0, '"')] = 19
         for char in input_characters:
             if char == '"':
@@ -102,12 +89,10 @@ class Lexer:
             else:
                 transition_table[(19, char)] = 19
                 transition_table[(20, char)] = 20
-
         for char in input_characters:
             if char != '*' and char != '/':
                 transition_table[(25, char)] = 25
                 transition_table[(26, char)] = 25
-                
         transition_table[(0, "'")] = 21
         for char in input_characters:
             if char == "'":
@@ -115,73 +100,50 @@ class Lexer:
             else:
                 transition_table[(21, char)] = 21
                 transition_table[(19, char)] = 19
-
         transition_table[(0, 't')] = 28
         transition_table[(28, 'r')] = 29
         transition_table[(29, 'u')] = 30
         transition_table[(30, 'e')] = 31
-
         transition_table[(0, 'f')] = 50
         transition_table[(50, 'a')] = 51
         transition_table[(51, 'l')] = 52
         transition_table[(52, 's')] = 53
-        transition_table[(53, 'e')] = 36  
-        
+        transition_table[(53, 'e')] = 54  
         transition_table[(0, '=')] = 5
         transition_table[(5, '=')] = 6
-        
         transition_table[(0, '[')] = 38
         transition_table[(0, '{')] = 39
         transition_table[(38, ']')] = 40
         transition_table[(39, '}')] = 41
-        
         transition_table[(0, 'd')] = 42
         transition_table[(42, 'e')] = 43
         transition_table[(43, 'f')] = 44
-
         transition_table[(0, '(')] = 45
         transition_table[(0, ')')] = 46
-        
-        transition_table[(0, ':')] = 41         
-
+        transition_table[(0, ':')] = 41        
         for char in " \t\n":
             transition_table[(0, char)] = 37
             transition_table[(37, char)] = 37
-        
         transition_table[(0, '_')] = 61  
         transition_table[(61, '_')] = 62
         transition_table[(62, 'r')] = 63
         transition_table[(63, 'e')] = 64
         transition_table[(64, 'a')] = 65
         transition_table[(65, 'd')] = 66
-        
         transition_table[(0, '_')] = 61  
         transition_table[(61, '_')] = 62
-        transition_table[(62, 'p')] = 67
+        transition_table[(62, 'p')] = 67 
         transition_table[(67, 'r')] = 68
         transition_table[(68, 'i')] = 69
         transition_table[(69, 'n')] = 70
         transition_table[(70, 't')] = 71
-        
-        # delay
-        transition_table[(0, '_')] = 61  
-        transition_table[(61, '_')] = 62
-        transition_table[(62, 'd')] = 63
-        transition_table[(63, 'e')] = 64
-        transition_table[(64, 'l')] = 65
-        transition_table[(65, 'a')] = 66
-        transition_table[(66, 'y')] = 67
-        
         for char in "0123456789":
             transition_table[(0, char)] = 2
             transition_table[(2, char)] = 2
-
         transition_table[(2, '.')] = 23
         for char in "0123456789":
             transition_table[(23, char)] = 24
             transition_table[(24, char)] = 24
-            
-        # Transitions for colour literals
         transition_table[(0, '#')] = 54
         for char in "0123456789abcdefABCDEF":
             transition_table[(54, char)] = 55
@@ -190,8 +152,6 @@ class Lexer:
             transition_table[(57, char)] = 58
             transition_table[(58, char)] = 59
             transition_table[(59, char)] = 60
-            
-        # Transitions for type keywords
         transition_table[(0, 'f')] = 74
         transition_table[(74, 'l')] = 75
         transition_table[(75, 'o')] = 76
@@ -210,15 +170,15 @@ class Lexer:
         transition_table[(88, 'o')] = 89
         transition_table[(89, 'u')] = 90
         transition_table[(90, 'r')] = 91
-
+        transition_table[(0, 'f')] = 21
+        transition_table[(21, 'o')] = 22
+        transition_table[(22, 'r')] = 23
         return transition_table
-
 
     def get_next_char(self):
         if self.position < len(self.source_code):
             # Get the character at the current position in the source code
             char = self.source_code[self.position]
-
             if self.open_quote and char == "\\":
                 self.position += 1
                 next_char = self.source_code[self.position] if self.position < len(self.source_code) else None
@@ -228,20 +188,14 @@ class Lexer:
                     char = '\n'
                 else:
                     raise InvalidEscapeSequenceError(f"\\{next_char}")
-
-            # Increment the position to move to the next character
             self.position += 1
             return char
         else:
-            # Return None if the end of the source code has been reached
             return None
-
     def get_token(self):
         lexeme = ""
-
         while True:
             char = self.get_next_char()
-
             if char is None:
                 if lexeme:
                     token_type = self.get_token_type_from_state(self.current_state, lexeme)
@@ -250,7 +204,6 @@ class Lexer:
                     else:
                         raise InvalidTokenError(lexeme)
                 return None
-
             if char in ["\"", "\'"] and self.open_quote == char and self.current_state in [19, 20, 21]:
                 lexeme += char
                 token_type = self.get_token_type_from_state(self.current_state, lexeme)
@@ -263,10 +216,8 @@ class Lexer:
                     raise InvalidTokenError(lexeme)
             else:
                 next_state = self.transition_table.get((self.current_state, char), -1)
-
                 if self.open_quote is None and (char == '"' or char == "'"):
                     self.open_quote = char
-
                 if next_state == -1:
                     if self.current_state == 0:
                         raise UnexpectedCharacterError(char)
@@ -283,25 +234,15 @@ class Lexer:
                 else:
                     self.current_state = next_state
                     lexeme += char
-
     def get_token_type_from_state(self, state, lexeme):
         if state == 1:
-            # Check if the lexeme is a keyword
             return Lexer.KEYWORDS.get(lexeme, "IDENTIFIER")
         elif state == 2:
             return 'INTEGER_LITERAL'
         elif state == 3:
-            # Distinguish between different operator types
-            operator_map = {
-                '+': 'PLUS',
-                '-': 'MINUS',
-                '*': 'MUL',
-                '/': 'DIV',
-                '%': 'MOD',
-            }
+            operator_map = { '+': 'PLUS','-': 'MINUS','*': 'MUL','/': 'DIV','%': 'MOD',}
             return operator_map.get(lexeme, 'OPERATOR')
         elif state == 4:
-            # Distinguish between different delimiter types
             delimiter_map = {
                 '(': 'LEFT_PAREN',
                 ')': 'RIGHT_PAREN',
@@ -340,18 +281,20 @@ class Lexer:
             return 'STRING_LITERAL'
         elif state == 21:
             return 'STRING_LITERAL'
+        elif state == 23:
+            return 'FOR'
         elif state == 24:
             return 'FLOAT_LITERAL'
         elif state == 27:
             return 'BLOCK_COMMENT'
-        elif state == 28:  # Transition state for 'true' boolean
+        elif state == 28: 
             if lexeme.lower() == "true":
                 return 'BOOLEAN_LITERAL'
             else:
                 return None
         elif state == 31:
             return 'BOOLEAN_LITERAL'
-        elif state == 36:  # Transition state for 'false' boolean
+        elif state == 54:
             if lexeme.lower() == "false":
                 return 'BOOLEAN_LITERAL'
             else:
@@ -362,9 +305,9 @@ class Lexer:
             return 'ARRAY_INDEX'
         elif state == 39:
             if lexeme == '{':
-                return 'DICTIONARY_START'
+                return 'LEFT_BRACE'
             elif lexeme == '}':
-                return 'DICTIONARY_END'
+                return 'RIGHT_BRACE'
             else:
                 return 'DICTIONARY'
         elif state == 41:
@@ -387,8 +330,14 @@ class Lexer:
             return 'READ_STATEMENT'
         elif state == 67:
             return 'DELAY_STATEMENT'
+        elif state == 70:
+            return 'PAD_WIDTH'
+        elif state == 68:
+            return 'PAD_HEIGHT'
         elif state == 71:
             return 'PRINT_STATEMENT'
+        elif state == 72:
+            return 'PIXEL_STATEMENT'
         elif state == 73:
             return 'FLOAT_LITERAL'
         elif state == 78:
@@ -411,7 +360,6 @@ class Lexer:
             if token.token_type not in ["WHITESPACE", "SINGLE_LINE_COMMENT", "BLOCK_COMMENT"]:
                 tokens.append(token)
         return tokens
-
     def lex_identifier_or_keyword(self):
         while self.is_alphanumeric(self.peek()):
             self.advance()
@@ -419,7 +367,6 @@ class Lexer:
         text = self.source[self.start:self.current]
         token_type = Lexer.KEYWORDS.get(text, "IDENTIFIER")
         self.add_token(token_type, text)
-
 class LexerError(Exception):
     pass
 
@@ -437,12 +384,10 @@ class InvalidEscapeSequenceError(LexerError):
     def __init__(self, sequence):
         self.sequence = sequence
         super().__init__(f"Invalid escape sequence '{sequence}'")
-
 # Usage:
 source_code = """
-__delay(x);
+let x: bool = false;
 """
-
 try:
     lexer = Lexer(source_code)
     tokens = lexer.tokenize()

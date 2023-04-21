@@ -62,6 +62,69 @@ class ASTXMLGenerator:
         self.indent()
         print('</BinaryExpression>')
         
+    def visit_PLUS(self, node):
+        self.indent()
+        print(f'<BinaryExpression operator="+">')
+        self.indent_level += 1
+
+        self.visit(node[1])  # Visit left operand
+        self.visit(node[2])  # Visit right operand
+
+        self.indent_level -= 1
+        self.indent()
+        print('</BinaryExpression>')
+        
+    def visit_MUL(self, node):
+        self.indent()
+        print(f'<BinaryExpression operator="*">')
+        self.indent_level += 1
+
+        self.visit(node[1])  # Visit left operand
+        self.visit(node[2])  # Visit right operand
+
+        self.indent_level -= 1
+        self.indent()
+        print('</BinaryExpression>')
+        
+    def visit_MINUS(self, node):
+        self.indent()
+        print('<MinusExpression>')
+
+        self.indent_level += 1
+        self.visit(node[1])
+        self.visit(node[2])
+        self.indent_level -= 1
+
+        self.indent()
+        print('</MinusExpression>')
+        
+    def visit_DIV(self, node):
+        self.indent()
+        print('<DivExpression>')
+        self.indent_level += 1
+
+        for child_node in node[1:]:
+            self.visit(child_node)
+
+        self.indent_level -= 1
+        self.indent()
+        print('</DivExpression>')
+        
+    def visit_LOGICAL_OPERATOR(self, node):
+        operator = "and" if node[1] == "and" else "or"
+        self.indent()
+        print(f'<LogicalExpression operator="{operator}">')
+        self.indent_level += 1
+
+        self.visit(node[2])  # Visit left operand
+        
+        if len(node) > 3:
+            self.visit(node[3])  # Visit right operand
+
+        self.indent_level -= 1
+        self.indent()
+        print('</LogicalExpression>')
+
     #---------------------------------------------------------------------------------------------------------------------------------------
 
     def visit_NUMBER(self, node):
@@ -211,6 +274,69 @@ class ASTXMLGenerator:
         self.indent()
         print('</ReturnStatement>')
     
+    #---------------------------------------------------------------------------------------------------------------------------------------
+        
+    def visit_PRINT(self, node):
+        self.indent()
+        print('<PrintStatement>')
+        self.indent_level += 1
+
+        self.visit(node[1])  # Visit the expression to be printed
+
+        self.indent_level -= 1
+        self.indent()
+        print('</PrintStatement>')
+
+    #---------------------------------------------------------------------------------------------------------------------------------------
+
+    def visit_DELAY(self, node):
+        self.indent()
+        print(f'<DelayStatement time="{node[1][1]}" />')
+
+    #---------------------------------------------------------------------------------------------------------------------------------------
+
+    def visit_PIXEL_STATEMENT(self, node):
+        self.indent()
+        print(f'<PixelStatement>')
+        self.indent_level += 1
+
+        for arg in node[2]:
+            self.visit(arg)
+
+        self.indent_level -= 1
+        self.indent()
+        print('</PixelStatement>')
+
+    #---------------------------------------------------------------------------------------------------------------------------------------
+    
+    def visit_WIDTH(self, node):
+        self.indent()
+        print(f'<Width width="{node[1][1]}" />')
+
+    def visit_HEIGHT(self, node):
+        self.indent()
+        print(f'<Height height="{node[1][1]}" />')
+
+    #---------------------------------------------------------------------------------------------------------------------------------------
+    
+    def visit_READ(self, node):
+        self.indent()
+        print('<ReadStatement>')
+        self.indent_level += 1
+
+        for arg in node[1:]:
+            self.visit(arg)
+
+        self.indent_level -= 1
+        self.indent()
+        print('</ReadStatement>')
+
+    #---------------------------------------------------------------------------------------------------------------------------------------
+    
+
+    
+    #---------------------------------------------------------------------------------------------------------------------------------------
+    
 ###########################################################################################################################################
 
     def indent(self):
@@ -220,8 +346,8 @@ class ASTXMLGenerator:
         
 # Usage:
 source_code = """
-let x: int = 5;
-let w: colour = #FF0000;
+let x: int = 1 and 2;
+let y: int = 2 or 1;
 """
 
 try:

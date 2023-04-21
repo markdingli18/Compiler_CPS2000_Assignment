@@ -13,7 +13,6 @@ class Lexer:
     KEYWORDS = {
         "if": "IF",
         "else": "ELSE",
-        "elif": "ELIF",
         "while": "WHILE",
         "for": "FOR",
         "return": "RETURN",
@@ -411,7 +410,7 @@ class Lexer:
             return 'STRING_LITERAL'
         elif state == 21:
             return 'STRING_LITERAL'
-        if state == 23:
+        elif state == 23:
             return 'FOR'
         elif state == 24:
             return 'FLOAT_LITERAL'
@@ -527,14 +526,13 @@ class InvalidEscapeSequenceError(LexerError):
 
 # Usage:
 source_code = """
-let x: int = 5;
-let w: colour = #FF0000;
+let x: int = 1;
 """
 
-try:
-    lexer = Lexer(source_code)
-    tokens = lexer.tokenize()
-    for token in tokens:
-        print(token)
-except LexerError as e:
-    print(f"Error: {e}")
+#try:
+#    lexer = Lexer(source_code)
+#    tokens = lexer.tokenize()
+#    for token in tokens:
+#        print(token)
+#except LexerError as e:
+#    print(f"Error: {e}")
