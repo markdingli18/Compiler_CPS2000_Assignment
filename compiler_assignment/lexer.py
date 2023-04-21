@@ -503,7 +503,6 @@ class Lexer:
         token_type = Lexer.KEYWORDS.get(text, "IDENTIFIER")
         self.add_token(token_type, text)
 
-
 ###########################################################################################################################################
 
 class LexerError(Exception):
@@ -528,15 +527,14 @@ class InvalidEscapeSequenceError(LexerError):
 
 # Usage:
 source_code = """
-for(let x: int = 0; x>10; x++){
-    __print("hello");
-}
+let x: int = 5;
+let w: colour = #FF0000;
 """
 
-#try:
-#    lexer = Lexer(source_code)
-#    tokens = lexer.tokenize()
-#    for token in tokens:
-#        print(token)
-#except LexerError as e:
-#    print(f"Error: {e}")
+try:
+    lexer = Lexer(source_code)
+    tokens = lexer.tokenize()
+    for token in tokens:
+        print(token)
+except LexerError as e:
+    print(f"Error: {e}")

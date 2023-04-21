@@ -21,7 +21,7 @@ class Parser:
             return self.parse_pixelr_statement()
         elif self.match("PIXEL_STATEMENT"):
             return self.parse_pixel_statement()
-        elif self.check("TYPE_INT", "TYPE_BOOL", "TYPE_FLOAT"):
+        elif self.check("TYPE_INT", "TYPE_BOOL", "TYPE_FLOAT", "TYPE_COLOUR"):
             return self.parse_declaration()
         elif self.match("IDENTIFIER") and self.match("ASSIGNMENT_OPERATOR"):
             identifier = self.previous().lexeme
@@ -99,7 +99,7 @@ class Parser:
             raise ParserError(f"Variable '{identifier}' is already declared")
 
         self.expect("COLON")
-        self.expect("TYPE_INT", "TYPE_BOOL", "TYPE_FLOAT")
+        self.expect("TYPE_INT", "TYPE_BOOL", "TYPE_FLOAT", 'TYPE_COLOUR')
         var_type = self.previous().token_type
 
         self.expect("ASSIGNMENT_OPERATOR")
@@ -331,7 +331,6 @@ class Parser:
         return ("PIXELR_STATEMENT", pixel_function_name, arguments)
     
 ###########################################################################################################################################
-###########################################################################################################################################
 
     def parse_for_statement(self):
         self.expect("FOR")
@@ -411,10 +410,8 @@ class ParserError(Exception):
 
 # Usage:
 source_code = """
-for(let x: int = 0; x < 10; x = x + 1){
-    __print("Iteration: ");
-    __print(x);
-}
+let x: int = 5;
+let w: colour = #FF0000;
 """
 
 try:

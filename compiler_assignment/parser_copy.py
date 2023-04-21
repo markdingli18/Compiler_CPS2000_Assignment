@@ -1,11 +1,11 @@
 from lexer import *
+
 class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
         self.current_index = 0
         self.symbol_table = {}
         
-
     def parse(self):
         program = []
         while self.current_index < len(self.tokens):
@@ -30,12 +30,7 @@ class Parser:
             return self.parse_if()
         elif self.match("ELSE"):
             return self.parse_if()
-        elif self.match("FUNCTION_DEF"):
-            return self.parse_function_definition()
-        elif self.match("IDENTIFIER") and self.check("OPEN_PAREN"):
-            func_call = self.parse_function_call()
-            self.expect("SEMICOLON")
-            return func_call
+        
         elif self.match("RETURN"):
             value = self.parse_expression()
             self.expect("SEMICOLON")
@@ -73,33 +68,19 @@ class Parser:
         while self.lookahead.type not in (Token.RIGHT_BRACE, Token.EOF):
             if self.lookahead.type == Token.LET:
                 self.parse_declaration()
+            elif self.lookahead.type == Token.FOR:
+                self.parse_for_statement()
             elif self.lookahead.type == Token.IDENTIFIER:
                 self.parse_assignment()
             else:
                 self.raise_parsing_error("Expected LET, FOR or IDENTIFIER")
 
         self.match(Token.RIGHT_BRACE)
-        
-    def parse_for_statement(self):
-        self.expect("OPEN_PAREN")
-
-        initializer = self.parse_statement()
-
-        condition = self.parse_condition()
-        self.expect("SEMICOLON")
-
-        increment = self.parse_expression()
-        self.expect("CLOSE_PAREN")
-
-        body = self.parse_block()
-
-        return ("FOR_LOOP", initializer, condition, increment, body)
     
     def parse_let_declaration(self):
         self.expect("IDENTIFIER")
         identifier = self.previous().lexeme
 
-        # Check for existing declarations and raise an error if the identifier is already in use
         if identifier in self.symbol_table:
             raise ParserError(f"Variable '{identifier}' is already declared")
 
@@ -111,10 +92,10 @@ class Parser:
         value = self.parse_expression()
         self.expect("SEMICOLON")
 
-        # Add the variable to the symbol table
         self.symbol_table[identifier] = var_type
 
         return ("DECLARATION", var_type, identifier, value)
+
     
     def parse_declaration(self):
         var_type = self.tokens[self.current_index].token_type
@@ -122,11 +103,9 @@ class Parser:
         self.expect("IDENTIFIER")
         identifier = self.previous().lexeme
 
-        # Check for existing declarations and raise an error if the identifier is already in use
         if identifier in self.symbol_table:
             raise ParserError(f"Variable '{identifier}' is already declared")
 
-        # Add the variable to the symbol table
         self.symbol_table[identifier] = var_type
 
         if self.match("ASSIGNMENT_OPERATOR"):
@@ -143,9 +122,9 @@ class Parser:
         self.expect("CLOSE_PAREN")
         true_branch = self.parse_block()
         false_branch = None
-        if self.check("ELIF"):  # Use check instead of match here
+        if self.check("ELIF"):  
             false_branch = [self.parse_if()]
-        elif self.match("ELSE"):  # Use match instead of check here
+        elif self.match("ELSE"):  
             false_branch = self.parse_block()
         return ("IF", condition, true_branch, false_branch)
         
@@ -198,43 +177,13 @@ class Parser:
             left = (op, left, right)
 
         return left
-    
-    def parse_function_definition(self):
-        self.expect("IDENTIFIER")
-        function_name = self.previous().lexeme
-        self.expect("OPEN_PAREN")
-        parameters = []
-
-        while not self.check("CLOSE_PAREN"):
-            if len(parameters) > 0:
-                self.expect("COMMA")
-            self.expect("IDENTIFIER")
-            parameters.append(self.previous().lexeme)
-
-        self.expect("CLOSE_PAREN")
-        body = self.parse_block()
-        return ("FUNCTION_DEF", function_name, parameters, body)
-    
-    def parse_function_call(self):
-        function_name = self.previous().lexeme
-        self.expect("OPEN_PAREN")
-        arguments = []
-
-        while not self.check("CLOSE_PAREN"):
-            if len(arguments) > 0:
-                self.expect("COMMA")
-            arguments.append(self.parse_expression())
-
-        self.expect("CLOSE_PAREN")
-        return ("FUNCTION_CALL", function_name, arguments)
 
     def parse_factor(self):
         if self.match("IDENTIFIER"):
             if self.check("OPEN_PAREN"):
                 if self.previous().lexeme == "__read":
                     return self.parse_read_call()
-                else:
-                    return self.parse_function_call()
+                
             else:
                 return ("IDENTIFIER", self.previous().lexeme)
         elif self.match("INTEGER_LITERAL"):
@@ -310,6 +259,41 @@ class Parser:
         self.expect("SEMICOLON")
 
         return ("PIXELR_STATEMENT", pixel_function_name, arguments)
+    
+    def parse_for_statement(self):
+        self.expect("FOR")
+        self.expect("OPEN_PAREN")
+        
+        if self.tokens[self.current_index].token_type == "LET":
+            self.match("LET")
+            self.expect("IDENTIFIER")
+            identifier = self.previous().lexeme
+
+            if identifier in self.symbol_table:
+                raise ParserError(f"Variable '{identifier}' is already declared")
+
+            self.symbol_table[identifier] = "TYPE_ANY"
+
+            self.expect("COLON")
+            var_type = self.tokens[self.current_index].token_type
+            self.match(var_type)
+            self.expect("ASSIGNMENT_OPERATOR")
+            value = self.parse_expression()
+            initializer = ("DECLARATION", var_type, identifier, value)
+        else:
+            initializer = self.parse_expression()
+            
+        self.expect("SEMICOLON")
+
+        condition = self.parse_expression()
+        self.expect("SEMICOLON")
+
+        increment = self.parse_expression()
+        self.expect("CLOSE_PAREN")
+
+        body = self.parse_block()
+
+        return ("FOR_LOOP", initializer, condition, increment, body)
 
     def match(self, token_type):
         if self.current_index < len(self.tokens) and self.tokens[self.current_index].token_type == token_type:
@@ -327,17 +311,15 @@ class Parser:
 
     def check(self, *token_types):
         return self.current_index < len(self.tokens) and self.tokens[self.current_index].token_type in token_types
+    
     def previous(self):
         return self.tokens[self.current_index - 1]
-
+    
 class ParserError(Exception):
     pass
-# Usage:
+
 source_code = """
-for(let x: int = 0; x < 10;){
-    __print("hello");
-    x = x + 1;
-}
+__read(x,y);
 """
 
 try:
