@@ -410,12 +410,9 @@ class ParserError(Exception):
 
 # Usage:
 source_code = """
-let x: int = 1 < 2;
-let y: int = 2 > 1;
-let z: int = 3 == 3;
-let p: int = 4 != 5;
-let q: int = 6 <= 6;
-let w: int = 7 >= 8;
+fun sum(num1: int, num2: int) -> int {
+    return num1 + num2
+}
 """
 
 try:

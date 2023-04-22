@@ -158,11 +158,6 @@ class Lexer:
         transition_table[(0, '{')] = 39
         transition_table[(38, ']')] = 40
         transition_table[(39, '}')] = 41
-        
-        # Transitions for function definitions
-        transition_table[(0, 'd')] = 42
-        transition_table[(42, 'e')] = 43
-        transition_table[(43, 'f')] = 44
 
         # Transitions for function calls
         transition_table[(0, '(')] = 45
@@ -275,6 +270,17 @@ class Lexer:
         transition_table[(0, 'f')] = 21
         transition_table[(21, 'o')] = 22
         transition_table[(22, 'r')] = 23
+        
+        # Transitions for function definitions
+        transition_table[(0, 'f')] = 100
+        transition_table[(100, 'u')] = 101
+        transition_table[(101, 'n')] = 102
+        transition_table[(102, '(')] = 103
+        transition_table[(106, '')] = 104
+        transition_table[(104, ')')] = 105
+        transition_table[(105, '')] = 106
+        transition_table[(106, '-')] = 107
+        transition_table[(107, '>')] = 108
 
         return transition_table
 
@@ -477,6 +483,20 @@ class Lexer:
             return 'TYPE_BOOL'
         elif state == 91:
             return 'TYPE_COLOUR'
+        elif state == 102:
+            return 'FUNCTION_DECL'
+        elif state == 103:
+            return 'OPEN_PAREN'
+        elif state == 104:
+            return 'WHITESPACE'
+        elif state == 105:
+            return 'CLOSE_PAREN'
+        elif state == 106:
+            return 'WHITESPACE'
+        elif state == 107:
+            return 'ARROW_START'
+        elif state == 108:
+            return 'ARROW_END'
         else:
             return None
 
@@ -526,13 +546,15 @@ class InvalidEscapeSequenceError(LexerError):
 
 # Usage:
 source_code = """
-let x: int = 1;
+fun hello(x: int, z: int) -> int {
+  return x + z;
+}
 """
 
-#try:
-#    lexer = Lexer(source_code)
-#    tokens = lexer.tokenize()
-#    for token in tokens:
-#        print(token)
-#except LexerError as e:
-#    print(f"Error: {e}")
+try:
+    lexer = Lexer(source_code)
+    tokens = lexer.tokenize()
+    for token in tokens:
+        print(token)
+except LexerError as e:
+    print(f"Error: {e}")
