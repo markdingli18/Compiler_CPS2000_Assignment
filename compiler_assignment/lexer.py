@@ -29,6 +29,7 @@ class Lexer:
         'for': 'FOR',
         "__pixelr": "PIXELR_STATEMENT",
         "__pixel": "PIXEL_STATEMENT",
+        'int': 'TYPE_INT',
     }
     
     def __init__(self, source_code):
@@ -281,6 +282,19 @@ class Lexer:
         transition_table[(105, '')] = 106
         transition_table[(106, '-')] = 107
         transition_table[(107, '>')] = 108
+        
+        # Transitions for if and else
+        transition_table[(0, 'i')] = 109
+        transition_table[(109, 'f')] = 110
+        transition_table[(0, 'e')] = 111
+        transition_table[(111, 'l')] = 112
+        transition_table[(112, 's')] = 113
+        transition_table[(113, 'e')] = 114
+        
+        # Transitions for int
+        transition_table[(0, 'i')] = 109
+        transition_table[(109, 'n')] = 110
+        transition_table[(110, 't')] = 111
 
         return transition_table
 
@@ -312,51 +326,71 @@ class Lexer:
 
     def get_token(self):
         lexeme = ""
+        longest_match = ""
 
         while True:
             char = self.get_next_char()
 
             if char is None:
                 if lexeme:
-                    token_type = self.get_token_type_from_state(self.current_state, lexeme)
+                    token_type = self.get_token_type_from_state(self.current_state, longest_match)
                     if token_type:
-                        return Token(token_type, lexeme)
+                        return Token(token_type, longest_match)
                     else:
-                        raise InvalidTokenError(lexeme)
+                        raise InvalidTokenError(longest_match)
                 return None
 
-            if char in ["\"", "\'"] and self.open_quote == char and self.current_state in [19, 20, 21]:
-                lexeme += char
-                token_type = self.get_token_type_from_state(self.current_state, lexeme)
-                if token_type:
-                    token = Token(token_type, lexeme)
-                    self.current_state = 0
-                    self.open_quote = None
-                    return token
-                else:
-                    raise InvalidTokenError(lexeme)
-            else:
-                next_state = self.transition_table.get((self.current_state, char), -1)
-
-                if self.open_quote is None and (char == '"' or char == "'"):
-                    self.open_quote = char
-
-                if next_state == -1:
-                    if self.current_state == 0:
-                        raise UnexpectedCharacterError(char)
+            if char in ["\"", "\'"]:
+                if self.open_quote == char and self.current_state in [19, 20, 21]:
+                    lexeme += char
+                    token_type = self.get_token_type_from_state(self.current_state, longest_match)
+                    if token_type:
+                        token = Token(token_type, longest_match)
+                        self.current_state = 0
+                        self.open_quote = None
+                        longest_match = ""
+                        return token
                     else:
-                        token_type = self.get_token_type_from_state(self.current_state, lexeme)
+                        raise InvalidTokenError(longest_match)
+                elif self.open_quote is None:
+                    self.open_quote = char
+                    longest_match = lexeme
+
+            next_state = self.transition_table.get((self.current_state, char), -1)
+
+            if next_state == -1:
+                if self.current_state == 0:
+                    if longest_match:
+                        token_type = self.get_token_type_from_state(self.current_state, longest_match)
                         if token_type:
-                            token = Token(token_type, lexeme)
+                            token = Token(token_type, longest_match)
                             self.position -= 1
                             self.current_state = 0
                             self.open_quote = None
+                            longest_match = ""
                             return token
                         else:
-                            raise InvalidTokenError(lexeme)
+                            raise InvalidTokenError(longest_match)
+                    else:
+                        raise UnexpectedCharacterError(char)
                 else:
-                    self.current_state = next_state
-                    lexeme += char
+                    token_type = self.get_token_type_from_state(self.current_state, longest_match)
+                    if token_type:
+                        token = Token(token_type, longest_match)
+                        self.position -= 1
+                        self.current_state = 0
+                        self.open_quote = None
+                        longest_match = ""
+                        return token
+                    else:
+                        raise InvalidTokenError(longest_match)
+            else:
+                self.current_state = next_state
+                lexeme += char
+
+                token_type = self.get_token_type_from_state(self.current_state, lexeme)
+                if token_type:
+                    longest_match = lexeme
 
 ###########################################################################################################################################
 
@@ -497,6 +531,12 @@ class Lexer:
             return 'ARROW_START'
         elif state == 108:
             return 'ARROW_END'
+        elif state == 110:
+            return 'IF'
+        elif state == 111:
+            return 'TYPE_INT'
+        elif state == 114:
+            return 'ELSE'
         else:
             return None
 
@@ -546,8 +586,10 @@ class InvalidEscapeSequenceError(LexerError):
 
 # Usage:
 source_code = """
-fun hello(x: int, z: int) -> int {
-  return x + z;
+if (x < 50) {
+  __print("x is less than 50");
+} else {
+  __print("x is greater than or equal to 50");
 }
 """
 

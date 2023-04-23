@@ -30,8 +30,6 @@ class Parser:
             return ("ASSIGNMENT", identifier, value)
         elif self.match("IF"):
             return self.parse_if()
-        elif self.match("ELIF"):
-            return self.parse_if()
         elif self.match("ELSE"):
             return self.parse_if()
         elif self.match("FUNCTION_DEF"):
@@ -74,20 +72,17 @@ class Parser:
 ###########################################################################################################################################
 
     def parse_block(self):
-        self.match(Token.LEFT_BRACE)
+        self.match("LEFT_BRACE")  # Use string "LEFT_BRACE" instead of Token.LEFT_BRACE
 
-        while self.lookahead.type not in (Token.RIGHT_BRACE, Token.EOF):
-            if self.lookahead.type == Token.LET:
-                self.parse_declaration()
-            elif self.lookahead.type == Token.FOR:
-                self.parse_for_statement()
-            elif self.lookahead.type == Token.IDENTIFIER:
-                self.parse_assignment()
-            else:
-                self.raise_parsing_error("Expected LET, FOR or IDENTIFIER")
+        block = []
 
-        self.match(Token.RIGHT_BRACE)
+        while not self.check("RIGHT_BRACE"):
+            block.append(self.parse_statement())
 
+        self.expect("RIGHT_BRACE")
+
+        return ("BLOCK", block)
+    
 ###########################################################################################################################################
     
     def parse_let_declaration(self):
@@ -137,16 +132,23 @@ class Parser:
 ###########################################################################################################################################
 
     def parse_if(self):
+        if_keyword = self.previous().token_type
         self.expect("OPEN_PAREN")
         condition = self.parse_condition()
         self.expect("CLOSE_PAREN")
         true_branch = self.parse_block()
         false_branch = None
-        if self.check("ELIF"):  # Use check instead of match here
+
+        if if_keyword == "IF" and self.check("ELIF"):  # Use check instead of match here
             false_branch = [self.parse_if()]
         elif self.match("ELSE"):  # Use match instead of check here
             false_branch = self.parse_block()
-        return ("IF", condition, true_branch, false_branch)
+        elif if_keyword == "ELIF":
+            if self.check("ELIF"):
+                false_branch = [self.parse_if()]
+            elif self.match("ELSE"):
+                false_branch = self.parse_block()
+        return (if_keyword, condition, true_branch, false_branch)
     
 ###########################################################################################################################################
     
@@ -410,9 +412,7 @@ class ParserError(Exception):
 
 # Usage:
 source_code = """
-fun sum(num1: int, num2: int) -> int {
-    return num1 + num2
-}
+let x: int = 5 * 20 + 5;
 """
 
 try:
