@@ -1,0 +1,57 @@
+LEXER
+ 
+check comments
+false (bool)
+__randi
+__pixel
+function
+float
+some letters not handled 'a,b,c'
+
+-------------------------------------------------------------------------------------------------
+PARSER
+
+for
+FunctionDecl (->)
+float (better)
+check comments
+false
+if
+while
+__randi
+read
+int
+
+-------------------------------------------------------------------------------------------------
+TASK 3
+
+if
+while
+
+-------------------------------------------------------------------------------------------------
+
+let x: int = 5 * 20 + 5;
+let y: float = 3.14;
+let z: bool = true;
+let colour: colour = #FF0000;
+
+__print(x);
+__delay(1000);
+__pixel(0, 0, 255);
+
+if (x < 50) {
+  __print("x is less than 50");
+} else {
+  __print("x is greater than or equal to 50");
+}
+
+for (let i: int = 0; i < 10; i = i + 1) {
+  __print(i);
+}
+
+fun add(a: int, b: int) -> int {
+  return a + b;
+}
+
+let result: int = add(5, 10);
+__print(result);

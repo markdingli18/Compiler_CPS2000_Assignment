@@ -14,15 +14,16 @@ class Lexer:
         "if": "IF",
         "else": "ELSE",
         "while": "WHILE",
-        "for": "FOR",
+        "for": "FOR_LOOP",
         "return": "RETURN",
-        "def": "FUNCTION_DEF",
-        "true": "BOOLEAN_LITERAL",
-        "false": "BOOLEAN_LITERAL",
+        "fun": "FUNCTION_DEF",
+        "true": "BOOLEAN_LITERAL_TRUE",
+        "false": "BOOLEAN_LITERAL_FALSE",
         "not": "LOGICAL_OPERATOR", 
         "__read": "READ_STATEMENT",
         "__print": "PRINT_STATEMENT",
         "__delay": "DELAY_STATEMENT", 
+        "__randi": "RANDI_STATEMENT",
         "__width": "PAD_WIDTH", 
         "__height": "PAD_HEIGHT", 
         'let': 'LET',
@@ -30,6 +31,9 @@ class Lexer:
         "__pixelr": "PIXELR_STATEMENT",
         "__pixel": "PIXEL_STATEMENT",
         'int': 'TYPE_INT',
+        'bool': 'TYPE_BOOL',
+        'float': 'TYPE_FLOAT',
+        'colour': 'TYPE_COLOUR',
     }
     
     def __init__(self, source_code):
@@ -144,11 +148,11 @@ class Lexer:
         transition_table[(30, 'e')] = 31
 
         # Transitions for 'false' keyword
-        transition_table[(0, 'f')] = 50
-        transition_table[(50, 'a')] = 51
-        transition_table[(51, 'l')] = 52
-        transition_table[(52, 's')] = 53
-        transition_table[(53, 'e')] = 36  
+        transition_table[(0, 'f')] = 25
+        transition_table[(25, 'a')] = 26
+        transition_table[(26, 'l')] = 27
+        transition_table[(27, 's')] = 28
+        transition_table[(28, 'e')] = 29
         
         # Transitions for assignment and equality operators
         transition_table[(0, '=')] = 5
@@ -180,6 +184,12 @@ class Lexer:
         transition_table[(64, 'a')] = 65
         transition_table[(65, 'd')] = 66
         
+        # Transitions for __randi statement
+        transition_table[(63, 'a')] = 67
+        transition_table[(67, 'n')] = 68
+        transition_table[(68, 'd')] = 69
+        transition_table[(69, 'i')] = 70
+        
         # Transitions for __print statement
         transition_table[(0, '_')] = 61  
         transition_table[(61, '_')] = 62
@@ -189,15 +199,15 @@ class Lexer:
         transition_table[(69, 'n')] = 70
         transition_table[(70, 't')] = 71
 
-        # Transitions for __pixelr statement
+        # Transitions for __pixel & __pixelr 
         transition_table[(0, '_')] = 61
         transition_table[(61, '_')] = 62
         transition_table[(62, 'p')] = 67
         transition_table[(67, 'i')] = 68
         transition_table[(68, 'x')] = 69
         transition_table[(69, 'e')] = 70
-        transition_table[(70, 'l')] = 71
-        transition_table[(71, 'r')] = 72
+        transition_table[(70, 'l')] = 72
+        transition_table[(72, 'r')] = 74
 
         # Transitions for __delay statement
         transition_table[(0, '_')] = 61  
@@ -211,11 +221,11 @@ class Lexer:
         # Transitions for __width statement
         transition_table[(0, '_')] = 61  
         transition_table[(61, '_')] = 62
-        transition_table[(62, 'w')] = 66
-        transition_table[(66, 'i')] = 67
-        transition_table[(67, 'd')] = 68
-        transition_table[(68, 't')] = 69
-        transition_table[(69, 'h')] = 70
+        transition_table[(62, 'w')] = 65
+        transition_table[(65, 'i')] = 66
+        transition_table[(66, 'd')] = 67
+        transition_table[(67, 't')] = 68
+        transition_table[(68, 'h')] = 69
         
          # Transitions for __height statement
         transition_table[(0, '_')] = 61  
@@ -232,11 +242,15 @@ class Lexer:
             transition_table[(0, char)] = 2
             transition_table[(2, char)] = 2
 
-        transition_table[(2, '.')] = 23
+        transition_table[(2, '.')] = 73
         for char in "0123456789":
-            transition_table[(23, char)] = 24
-            transition_table[(24, char)] = 24
-            
+            transition_table[(73, char)] = 124
+            transition_table[(124, char)] = 124
+
+        transition_table[(73, '.')] = 123
+        transition_table[(123, '0123456789')] = 124
+        transition_table[(124, '0123456789')] = 124
+
         # Transitions for colour literals
         transition_table[(0, '#')] = 54
         for char in "0123456789abcdefABCDEF":
@@ -247,41 +261,19 @@ class Lexer:
             transition_table[(58, char)] = 59
             transition_table[(59, char)] = 60
             
-        # Transitions for type keywords
-        transition_table[(0, 'f')] = 74
-        transition_table[(74, 'l')] = 75
-        transition_table[(75, 'o')] = 76
-        transition_table[(76, 'a')] = 77
-        transition_table[(77, 't')] = 78
-        transition_table[(0, 'i')] = 79
-        transition_table[(79, 'n')] = 80
-        transition_table[(80, 't')] = 81
+        # Transitions for bool      
         transition_table[(0, 'b')] = 82
         transition_table[(82, 'o')] = 83
         transition_table[(83, 'o')] = 84
         transition_table[(84, 'l')] = 85
+
+        # Transitions for colour      
         transition_table[(0, 'c')] = 86
         transition_table[(86, 'o')] = 87
         transition_table[(87, 'l')] = 88
         transition_table[(88, 'o')] = 89
         transition_table[(89, 'u')] = 90
         transition_table[(90, 'r')] = 91
-        
-        # For loop
-        transition_table[(0, 'f')] = 21
-        transition_table[(21, 'o')] = 22
-        transition_table[(22, 'r')] = 23
-        
-        # Transitions for function definitions
-        transition_table[(0, 'f')] = 100
-        transition_table[(100, 'u')] = 101
-        transition_table[(101, 'n')] = 102
-        transition_table[(102, '(')] = 103
-        transition_table[(106, '')] = 104
-        transition_table[(104, ')')] = 105
-        transition_table[(105, '')] = 106
-        transition_table[(106, '-')] = 107
-        transition_table[(107, '>')] = 108
         
         # Transitions for if and else
         transition_table[(0, 'i')] = 109
@@ -295,6 +287,33 @@ class Lexer:
         transition_table[(0, 'i')] = 109
         transition_table[(109, 'n')] = 110
         transition_table[(110, 't')] = 111
+
+        # Transitions for float 
+        transition_table[(0, 'f')] = 100
+        transition_table[(100, 'l')] = 101
+        transition_table[(101, 'o')] = 102
+        transition_table[(102, 'a')] = 103
+        transition_table[(103, 't')] = 104 
+
+        # Transitions for false
+        transition_table[(100, 'a')] = 105
+        transition_table[(105, 'l')] = 106
+        transition_table[(106, 's')] = 107
+        transition_table[(107, 'e')] = 108
+
+        # For loop transitions
+        transition_table[(100, 'o')] = 111
+        transition_table[(111, 'r')] = 112
+        
+        # Transitions for function definitions
+        transition_table[(100, 'u')] = 101
+        transition_table[(101, 'n')] = 102
+        transition_table[(102, '(')] = 103
+        transition_table[(106, '')] = 104
+        transition_table[(104, ')')] = 105
+        transition_table[(105, '')] = 106
+        transition_table[(106, '-')] = 107
+        transition_table[(107, '>')] = 108
 
         return transition_table
 
@@ -450,22 +469,18 @@ class Lexer:
             return 'STRING_LITERAL'
         elif state == 21:
             return 'STRING_LITERAL'
-        elif state == 23:
-            return 'FOR'
         elif state == 24:
             return 'FLOAT_LITERAL'
         elif state == 27:
             return 'BLOCK_COMMENT'
-        elif state == 28: 
+        elif state == 31: 
             if lexeme.lower() == "true":
-                return 'BOOLEAN_LITERAL'
+                return 'BOOLEAN_LITERAL_TRUE'
             else:
                 return None
-        elif state == 31:
-            return 'BOOLEAN_LITERAL'
-        elif state == 36:
+        elif state == 108:
             if lexeme.lower() == "false":
-                return 'BOOLEAN_LITERAL'
+                return 'BOOLEAN_LITERAL_FALSE'
             else:
                 return None
         elif state == 37:
@@ -491,38 +506,38 @@ class Lexer:
             return 'OPEN_PAREN'
         elif state == 46:
             return 'CLOSE_PAREN'
-        elif state == 53:
-            return 'PRINT_STATEMENT'
         elif state == 60:
             return 'COLOR_LITERAL'
         elif state == 66:
             return 'READ_STATEMENT'
         elif state == 67:
             return 'DELAY_STATEMENT'
-        elif state == 70:
-            return 'PAD_WIDTH'
         elif state == 68:
             return 'PAD_HEIGHT'
+        elif state == 69:
+            return 'PAD_WIDTH'
+        elif state == 70:
+            return 'RANDI_STATEMENT'
         elif state == 71:
             return 'PRINT_STATEMENT'
         elif state == 72:
             return 'PIXEL_STATEMENT'
         elif state == 73:
+            return 'FLOAT_LITERAL' if lexeme.endswith(';') else None
+        elif state == 74:
+            return 'PIXELR_STATEMENT'
+        elif state == 124:
             return 'FLOAT_LITERAL'
-        elif state == 78:
-            return 'TYPE_FLOAT'
-        elif state == 81:
-            return 'TYPE_INT'
         elif state == 85:
             return 'TYPE_BOOL'
         elif state == 91:
             return 'TYPE_COLOUR'
         elif state == 102:
-            return 'FUNCTION_DECL'
+            return 'FUNCTION_DEF'
         elif state == 103:
             return 'OPEN_PAREN'
         elif state == 104:
-            return 'WHITESPACE'
+            return 'ELSE'
         elif state == 105:
             return 'CLOSE_PAREN'
         elif state == 106:
@@ -535,8 +550,10 @@ class Lexer:
             return 'IF'
         elif state == 111:
             return 'TYPE_INT'
-        elif state == 114:
-            return 'ELSE'
+        elif state == 112:
+            return 'FOR_LOOP'
+        elif state == 113:
+            return 'TYPE_FLOAT'
         else:
             return None
 
@@ -586,10 +603,8 @@ class InvalidEscapeSequenceError(LexerError):
 
 # Usage:
 source_code = """
-if (x < 50) {
-  __print("x is less than 50");
-} else {
-  __print("x is greater than or equal to 50");
+fun my_function(x: int, y: int) -> int {
+    return x + y;
 }
 """
 
