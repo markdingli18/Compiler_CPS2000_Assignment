@@ -14,7 +14,7 @@ class Lexer:
         "if": "IF",
         "else": "ELSE",
         "while": "WHILE",
-        "for": "FOR_LOOP",
+        "for": "FOR",
         "return": "RETURN",
         "fun": "FUNCTION_DEF",
         "true": "BOOLEAN_LITERAL_TRUE",
@@ -27,13 +27,13 @@ class Lexer:
         "__width": "PAD_WIDTH", 
         "__height": "PAD_HEIGHT", 
         'let': 'LET',
-        'for': 'FOR',
         "__pixelr": "PIXELR_STATEMENT",
         "__pixel": "PIXEL_STATEMENT",
         'int': 'TYPE_INT',
         'bool': 'TYPE_BOOL',
         'float': 'TYPE_FLOAT',
         'colour': 'TYPE_COLOUR',
+        '->': 'FUNCTION_ARROW'
     }
     
     def __init__(self, source_code):
@@ -312,8 +312,8 @@ class Lexer:
         transition_table[(106, '')] = 104
         transition_table[(104, ')')] = 105
         transition_table[(105, '')] = 106
-        transition_table[(106, '-')] = 107
-        transition_table[(107, '>')] = 108
+        transition_table[(1, '-')] = 200
+        transition_table[(200, '>')] = 201
 
         return transition_table
 
@@ -469,8 +469,10 @@ class Lexer:
             return 'STRING_LITERAL'
         elif state == 21:
             return 'STRING_LITERAL'
+        elif state == 22:
+            return 'SINGLE_LINE_COMMENT'
         elif state == 24:
-            return 'FLOAT_LITERAL'
+            return 'MULTI_LINE_COMMENT'
         elif state == 27:
             return 'BLOCK_COMMENT'
         elif state == 31: 
@@ -526,8 +528,6 @@ class Lexer:
             return 'FLOAT_LITERAL' if lexeme.endswith(';') else None
         elif state == 74:
             return 'PIXELR_STATEMENT'
-        elif state == 124:
-            return 'FLOAT_LITERAL'
         elif state == 85:
             return 'TYPE_BOOL'
         elif state == 91:
@@ -537,23 +537,25 @@ class Lexer:
         elif state == 103:
             return 'OPEN_PAREN'
         elif state == 104:
-            return 'ELSE'
+            return 'TYPE_FLOAT'
         elif state == 105:
             return 'CLOSE_PAREN'
         elif state == 106:
             return 'WHITESPACE'
-        elif state == 107:
-            return 'ARROW_START'
-        elif state == 108:
-            return 'ARROW_END'
         elif state == 110:
             return 'IF'
         elif state == 111:
             return 'TYPE_INT'
         elif state == 112:
-            return 'FOR_LOOP'
+            return 'FOR'
         elif state == 113:
             return 'TYPE_FLOAT'
+        elif state == 114:
+            return 'ELSE'
+        elif state == 124:
+            return 'FLOAT_LITERAL'
+        elif state == 201:
+            return 'FUNCTION_ARROW'
         else:
             return None
 
@@ -603,15 +605,13 @@ class InvalidEscapeSequenceError(LexerError):
 
 # Usage:
 source_code = """
-fun my_function(x: int, y: int) -> int {
-    return x + y;
-}
+let y: float = 3.14;
 """
 
-try:
-    lexer = Lexer(source_code)
-    tokens = lexer.tokenize()
-    for token in tokens:
-        print(token)
-except LexerError as e:
-    print(f"Error: {e}")
+#try:
+#    lexer = Lexer(source_code)
+#    tokens = lexer.tokenize()
+#    for token in tokens:
+#        print(token)
+#except LexerError as e:
+#    print(f"Error: {e}")

@@ -59,16 +59,18 @@ class Parser:
             self.expect("SEMICOLON")
             return ("HEIGHT", expression)
         elif self.match("READ_STATEMENT"):
-            expression = self.parse_expression()
-            self.expect("SEMICOLON")
-            return ("READ", expression)
+            return self.parse_read_call()
+        elif self.match("RANDI_STATEMENT"):
+            return self.parse_randi_call()
         elif self.match("LET"):
             return self.parse_let_declaration()
         elif self.match("FOR"):
             return self.parse_for_statement()
+        elif self.match("WHILE"):
+            return self.parse_while_statement()
         else:
             raise ParserError(f"Invalid statement at token {self.tokens[self.current_index]}")
-        
+
 ###########################################################################################################################################
 
     def parse_block(self):
@@ -109,8 +111,7 @@ class Parser:
 ###########################################################################################################################################
     
     def parse_declaration(self):
-        var_type = self.tokens[self.current_index].token_type
-        self.match(var_type)
+        self.match("LET")
         self.expect("IDENTIFIER")
         identifier = self.previous().lexeme
 
@@ -119,37 +120,40 @@ class Parser:
             raise ParserError(f"Variable '{identifier}' is already declared")
 
         # Add the variable to the symbol table
-        self.symbol_table[identifier] = var_type
+        self.symbol_table[identifier] = "TYPE_ANY"
 
-        if self.match("ASSIGNMENT_OPERATOR"):
-            value = self.parse_expression()
-            self.expect("SEMICOLON")
-            return ("DECLARATION", var_type, identifier, value)
+        self.expect("COLON")
+        var_type = self.tokens[self.current_index].token_type
+
+        if var_type == "TYPE_COLOUR":
+            self.match("TYPE_COLOUR")
+            self.expect("ASSIGNMENT_OPERATOR")
+            self.expect("COLOR_LITERAL")
+            value = ("COLOR_LITERAL", self.previous().lexeme)
         else:
-            self.expect("SEMICOLON")
-            return ("DECLARATION", var_type, identifier)
+            self.match(var_type)
+            self.expect("ASSIGNMENT_OPERATOR")
+            value = self.parse_expression()
+
+        self.expect("SEMICOLON")
+        return ("DECLARATION", var_type, identifier, value)
 
 ###########################################################################################################################################
 
     def parse_if(self):
-        if_keyword = self.previous().token_type
+        self.match("IF")
         self.expect("OPEN_PAREN")
         condition = self.parse_condition()
         self.expect("CLOSE_PAREN")
         true_branch = self.parse_block()
         false_branch = None
 
-        if if_keyword == "IF" and self.check("ELIF"):  # Use check instead of match here
-            false_branch = [self.parse_if()]
-        elif self.match("ELSE"):  # Use match instead of check here
+        if self.check("ELSE"):
+            self.match("ELSE")
             false_branch = self.parse_block()
-        elif if_keyword == "ELIF":
-            if self.check("ELIF"):
-                false_branch = [self.parse_if()]
-            elif self.match("ELSE"):
-                false_branch = self.parse_block()
-        return (if_keyword, condition, true_branch, false_branch)
-    
+
+        return ("IF", condition, true_branch, ("ELSE", false_branch)) if false_branch else ("IF", condition, true_branch)
+
 ###########################################################################################################################################
     
     def parse_condition(self):
@@ -222,11 +226,25 @@ class Parser:
             if len(parameters) > 0:
                 self.expect("COMMA")
             self.expect("IDENTIFIER")
-            parameters.append(self.previous().lexeme)
+            param_name = self.previous().lexeme
+            if self.match("COLON"):
+                param_type = self.tokens[self.current_index].token_type
+                self.match(param_type)
+                parameters.append((param_name, param_type))
+            else:
+                parameters.append(param_name)
 
         self.expect("CLOSE_PAREN")
+        
+        # Add these lines to handle the "->" syntax and return type
+        if self.match("MINUS") and self.match("RELATIONAL_OPERATOR"):
+            return_type = self.tokens[self.current_index].token_type
+            self.match(return_type)
+        else:
+            return_type = None
+
         body = self.parse_block()
-        return ("FUNCTION_DEF", function_name, parameters, body)
+        return ("FUNCTION_DEF", function_name, parameters, return_type, body)
     
     def parse_function_call(self):
         function_name = self.previous().lexeme
@@ -256,8 +274,8 @@ class Parser:
             return ("INTEGER_LITERAL", int(self.previous().lexeme))
         elif self.match("FLOAT_LITERAL"):
             return ("FLOAT_LITERAL", float(self.previous().lexeme))
-        elif self.match("BOOLEAN_LITERAL"):
-            return ("BOOLEAN_LITERAL", self.previous().lexeme == "true")
+        elif self.match("BOOLEAN_LITERAL_TRUE") or self.match("BOOLEAN_LITERAL_FALSE"):
+            return ("BOOLEAN_LITERAL", self.previous().token_type == "BOOLEAN_LITERAL_TRUE")
         elif self.match("STRING_LITERAL"):
             return ("STRING_LITERAL", self.previous().lexeme)
         elif self.match("OPEN_PAREN"):
@@ -282,22 +300,40 @@ class Parser:
             left = (op, left, right)
 
         return left
+    
+###########################################################################################################################################
+
+    def parse_while_statement(self):
+        self.match("WHILE")
+        self.expect("OPEN_PAREN")
+        condition = self.parse_condition()
+        self.expect("CLOSE_PAREN")
+        body = self.parse_block()
+        return ("WHILE", condition, body)
 
 ###########################################################################################################################################
     
     def parse_read_call(self):
         function_name = self.previous().lexeme
         self.expect("OPEN_PAREN")
-        arguments = []
-
-        while not self.check("CLOSE_PAREN"):
-            if len(arguments) > 0:
-                self.expect("COMMA")
-            arguments.append(self.parse_expression())
-
+        identifiers = []
+        identifiers.append(self.parse_expression())
+        while self.match("COMMA"):
+            identifiers.append(self.parse_expression())
         self.expect("CLOSE_PAREN")
-        return ("READ_STATEMENT", function_name, arguments)
+        self.expect("SEMICOLON")
+        return ("READ_STATEMENT", identifiers)
     
+###########################################################################################################################################
+  
+    def parse_randi_call(self):
+        function_name = self.previous().lexeme
+        self.expect("OPEN_PAREN")
+        argument = self.parse_expression()
+        self.expect("CLOSE_PAREN")
+        self.expect("SEMICOLON")
+        return ("RANDI_STATEMENT", argument)
+
 ###########################################################################################################################################
     
     def parse_pixel_statement(self):
@@ -314,7 +350,7 @@ class Parser:
         self.expect("CLOSE_PAREN")
         self.expect("SEMICOLON")
 
-        return ("PIXEL_STATEMENT", pixel_function_name, arguments)
+        return ("PIXEL_STATEMENT", arguments)
 
     def parse_pixelr_statement(self):
         pixel_function_name = self.previous().lexeme
@@ -330,50 +366,46 @@ class Parser:
         self.expect("CLOSE_PAREN")
         self.expect("SEMICOLON")
 
-        return ("PIXELR_STATEMENT", pixel_function_name, arguments)
+        return ("PIXELR_STATEMENT", arguments)
     
 ###########################################################################################################################################
 
     def parse_for_statement(self):
-        self.expect("FOR")
+        self.match("FOR")
         self.expect("OPEN_PAREN")
-        
-        # Parse initializer
-        if self.tokens[self.current_index].token_type == "LET":
-            self.match("LET")
-            self.expect("IDENTIFIER")
+
+        # Parse initialization (declaration or assignment)
+        if self.match("LET"):
+            if self.check("IDENTIFIER"):
+                initialization = self.parse_declaration()
+            else:
+                raise ParserError(f"Invalid variable name in for loop at token {self.tokens[self.current_index]}")
+        elif self.match("IDENTIFIER") and self.match("ASSIGNMENT_OPERATOR"):
             identifier = self.previous().lexeme
-
-            # Check for existing declarations and raise an error if the identifier is already in use
-            if identifier in self.symbol_table:
-                raise ParserError(f"Variable '{identifier}' is already declared")
-
-            # Add the variable to the symbol table
-            self.symbol_table[identifier] = "TYPE_ANY"
-
-            self.expect("COLON")
-            var_type = self.tokens[self.current_index].token_type
-            self.match(var_type)
-            self.expect("ASSIGNMENT_OPERATOR")
             value = self.parse_expression()
-            initializer = ("DECLARATION", var_type, identifier, value)
+            self.expect("SEMICOLON")
+            initialization = ("ASSIGNMENT", identifier, value)
         else:
-            initializer = self.parse_expression()
-            
-        self.expect("SEMICOLON")
+            raise ParserError(f"Invalid initialization in for loop at token {self.tokens[self.current_index]}")
 
         # Parse condition
-        condition = self.parse_expression()
+        condition = self.parse_condition()
         self.expect("SEMICOLON")
 
-        # Parse increment
-        increment = self.parse_expression()
+        # Parse update
+        if self.match("IDENTIFIER") and self.match("ASSIGNMENT_OPERATOR"):
+            identifier = self.previous().lexeme
+            value = self.parse_expression()
+            update = ("ASSIGNMENT", identifier, value)
+        else:
+            raise ParserError(f"Invalid update in for loop at token {self.tokens[self.current_index]}")
+
         self.expect("CLOSE_PAREN")
 
         # Parse body
         body = self.parse_block()
 
-        return ("FOR_LOOP", initializer, condition, increment, body)
+        return ("FOR", initialization, condition, update, body)
 
 ###########################################################################################################################################
 
@@ -412,7 +444,11 @@ class ParserError(Exception):
 
 # Usage:
 source_code = """
-let x: int = 5 * 20 + 5;
+if (x < 50) {
+  __print("x is less than 50");
+} else {
+  __print("x is greater than or equal to 50");
+}
 """
 
 try:
