@@ -444,11 +444,7 @@ class ParserError(Exception):
 
 # Usage:
 source_code = """
-if (x < 50) {
-  __print("x is less than 50");
-} else {
-  __print("x is greater than or equal to 50");
-}
+let y: float = 3.14;
 """
 
 try:

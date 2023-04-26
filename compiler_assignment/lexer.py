@@ -605,13 +605,13 @@ class InvalidEscapeSequenceError(LexerError):
 
 # Usage:
 source_code = """
-let y: float = 3.14;
+__pixel(10, 20, "red");
 """
 
-#try:
-#    lexer = Lexer(source_code)
-#    tokens = lexer.tokenize()
-#    for token in tokens:
-#        print(token)
-#except LexerError as e:
-#    print(f"Error: {e}")
+try:
+    lexer = Lexer(source_code)
+    tokens = lexer.tokenize()
+    for token in tokens:
+        print(token)
+except LexerError as e:
+    print(f"Error: {e}")

@@ -17,9 +17,7 @@ class ASTXMLGenerator:
         raise NotImplementedError(f"Visit method for node type {node[0]} not implemented.")
     
 ###########################################################################################################################################
-    
-    # Visit methods for all AST node types
-    
+        
     def visit_PROGRAM(self, node):
         print('<Program>')
         self.indent_level += 1
@@ -47,6 +45,12 @@ class ASTXMLGenerator:
     def visit_INTEGER_LITERAL(self, node):
         self.indent()
         print(f'<IntegerLiteral value="{node[1]}" />')
+
+    #---------------------------------------------------------------------------------------------------------------------------------------
+        
+    def visit_BOOLEAN_LITERAL(self, node):
+        self.indent()
+        print(f'<BooleanLiteral value="{node[1]}" />')
         
     #---------------------------------------------------------------------------------------------------------------------------------------
     
@@ -55,8 +59,8 @@ class ASTXMLGenerator:
         print(f'<BinaryExpression operator="{node[1]}">')
         self.indent_level += 1
 
-        self.visit(node[2])  # Visit left operand
-        self.visit(node[3])  # Visit right operand
+        self.visit(node[2])  
+        self.visit(node[3])  
 
         self.indent_level -= 1
         self.indent()
@@ -67,8 +71,8 @@ class ASTXMLGenerator:
         print(f'<BinaryExpression operator="+">')
         self.indent_level += 1
 
-        self.visit(node[1])  # Visit left operand
-        self.visit(node[2])  # Visit right operand
+        self.visit(node[1])  
+        self.visit(node[2])  
 
         self.indent_level -= 1
         self.indent()
@@ -79,8 +83,8 @@ class ASTXMLGenerator:
         print(f'<BinaryExpression operator="*">')
         self.indent_level += 1
 
-        self.visit(node[1])  # Visit left operand
-        self.visit(node[2])  # Visit right operand
+        self.visit(node[1])  
+        self.visit(node[2])  
 
         self.indent_level -= 1
         self.indent()
@@ -116,10 +120,10 @@ class ASTXMLGenerator:
         print(f'<LogicalExpression operator="{operator}">')
         self.indent_level += 1
 
-        self.visit(node[2])  # Visit left operand
+        self.visit(node[2]) 
         
         if len(node) > 3:
-            self.visit(node[3])  # Visit right operand
+            self.visit(node[3]) 
 
         self.indent_level -= 1
         self.indent()
@@ -168,57 +172,126 @@ class ASTXMLGenerator:
         print(f'<UnaryExpression operator="{node[1]}">')
         self.indent_level += 1
 
-        self.visit(node[2])  # Visit the operand
+        self.visit(node[2])
 
         self.indent_level -= 1
         self.indent()
-        print('</UnaryExpression>')
+        print('</UnaryExpression>')  
         
     #---------------------------------------------------------------------------------------------------------------------------------------
         
-    def visit_IF_STATEMENT(self, node):
+    def visit_IF(self, node):
         self.indent()
         print('<IfStatement>')
         self.indent_level += 1
 
-        self.visit(node[1])  # Visit the condition
-        self.visit(node[2])  # Visit the true branch
+        # Visit the conditional expression
+        self.visit(node[1])
 
-        if len(node) > 3:  # If an else branch is present
-            self.visit(node[3])
+        # Visit the block statement
+        self.visit(node[2])
 
         self.indent_level -= 1
         self.indent()
         print('</IfStatement>')
+
+        # Check if there's an else block
+        if len(node) > 3:
+            self.visit(node[3])
+
+    def visit_ELSE(self, node):
+        # Only visit the ElseStatement if there is an else block
+        if len(node) > 0:
+            self.indent()
+            print('<ElseStatement>')
+            self.indent_level += 1
+
+            # Visit the block statement
+            self.visit(node[1])
+
+            self.indent_level -= 1
+            self.indent()
+            print('</ElseStatement>')
+    
+    #---------------------------------------------------------------------------------------------------------------------------------------
+        
+    def visit_RELATIONAL_OPERATOR(self, node):
+        self.indent()
+        operator = node[0]
+        left_operand = node[1]
+        right_operand = node[2]
+        print(f'<RelationalExpression operator="{operator}">')
+        self.indent_level += 1
+        self.visit(left_operand)
+        self.visit(right_operand)
+        self.indent_level -= 1
+        self.indent()
+        print('</RelationalExpression>')
         
     #---------------------------------------------------------------------------------------------------------------------------------------
         
-    def visit_WHILE_LOOP(self, node):
+    def visit_BLOCK(self, node):
         self.indent()
-        print('<WhileLoop>')
+        print('<BlockStatement>')
         self.indent_level += 1
 
-        self.visit(node[1])  # Visit the condition
-        self.visit(node[2])  # Visit the loop body
+        for statement in node[1]:
+            self.visit(statement)
 
         self.indent_level -= 1
         self.indent()
-        print('</WhileLoop>')
+        print('</BlockStatement>')
         
     #---------------------------------------------------------------------------------------------------------------------------------------
+
+    def visit_WHILE(self, node):
+        self.indent()
+        print('<WhileStatement>')
+        self.indent_level += 1
+
+        self.visit(node[1])
+
+        self.visit(node[2])
+
+        self.indent_level -= 1
+        self.indent()
+        print('</WhileStatement>')
+
+    #---------------------------------------------------------------------------------------------------------------------------------------
         
-    def visit_FUNCTION_DEFINITION(self, node):
+    def visit_FUNCTION_DEF(self, node):
         self.indent()
         print(f'<FunctionDefinition name="{node[1]}">')
         self.indent_level += 1
 
-        self.visit(node[2])  # Visit the argument list
-        self.visit(node[3])  # Visit the function body
+        # Visit the list of parameters
+        for parameter in node[2]:
+            self.indent()
+            print(f'<Parameter name="{parameter[0]}" type="{parameter[1]}"/>')
+
+        # Visit the return type
+        self.indent()
+        print(f'<ReturnType>{node[3]}</ReturnType>')
+
+        # Visit the function body
+        self.visit(node[4])
 
         self.indent_level -= 1
         self.indent()
         print('</FunctionDefinition>')
         
+    def visit_RETURN(self, node):
+        self.indent()
+        print('<ReturnStatement>')
+        self.indent_level += 1
+
+        # Visit the expression being returned
+        self.visit(node[1])
+
+        self.indent_level -= 1
+        self.indent()
+        print('</ReturnStatement>')
+
     #---------------------------------------------------------------------------------------------------------------------------------------
 
     def visit_FUNCTION_CALL(self, node):
@@ -268,7 +341,7 @@ class ASTXMLGenerator:
         print('<ReturnStatement>')
         self.indent_level += 1
 
-        self.visit(node[1])  # Visit the returned expression
+        self.visit(node[1]) 
 
         self.indent_level -= 1
         self.indent()
@@ -281,7 +354,7 @@ class ASTXMLGenerator:
         print('<PrintStatement>')
         self.indent_level += 1
 
-        self.visit(node[1])  # Visit the expression to be printed
+        self.visit(node[1]) 
 
         self.indent_level -= 1
         self.indent()
@@ -292,20 +365,6 @@ class ASTXMLGenerator:
     def visit_DELAY(self, node):
         self.indent()
         print(f'<DelayStatement time="{node[1][1]}" />')
-
-    #---------------------------------------------------------------------------------------------------------------------------------------
-
-    def visit_PIXEL_STATEMENT(self, node):
-        self.indent()
-        print(f'<PixelStatement>')
-        self.indent_level += 1
-
-        for arg in node[2]:
-            self.visit(arg)
-
-        self.indent_level -= 1
-        self.indent()
-        print('</PixelStatement>')
 
     #---------------------------------------------------------------------------------------------------------------------------------------
     
@@ -319,12 +378,12 @@ class ASTXMLGenerator:
 
     #---------------------------------------------------------------------------------------------------------------------------------------
     
-    def visit_READ(self, node):
+    def visit_READ_STATEMENT(self, node):
         self.indent()
         print('<ReadStatement>')
         self.indent_level += 1
 
-        for arg in node[1:]:
+        for arg in node[1]:
             self.visit(arg)
 
         self.indent_level -= 1
@@ -333,8 +392,77 @@ class ASTXMLGenerator:
 
     #---------------------------------------------------------------------------------------------------------------------------------------
     
+    def visit_PIXEL_STATEMENT(self, node):
+        self.indent()
+        print('<PixelStatement>')
+        self.indent_level += 1
 
+        for arg in node[1:]:
+            self.visit(('INTEGER_LITERAL', arg))
+
+        self.indent_level -= 1
+        self.indent()
+        print('</PixelStatement>')
+
+    def visit_PIXELR_STATEMENT(self, node):
+        self.indent()
+        print('<PixelrStatement>')
+        self.indent_level += 1
+
+        for arg in node[1:]:
+            self.visit(('INTEGER_LITERAL', arg))
+
+        self.indent_level -= 1
+        self.indent()
+        print('</PixelrStatement>')
+
+    #---------------------------------------------------------------------------------------------------------------------------------------
     
+    def visit_FOR(self, node):
+        self.indent()
+        print('<ForStatement>')
+        self.indent_level += 1
+
+        self.indent()
+        print('<Initialization>')
+        self.visit(node[1])
+        print('</Initialization>')
+
+        self.indent()
+        print('<Condition>')
+        self.visit(node[2])
+        print('</Condition>')
+
+        self.indent()
+        print('<Update>')
+        self.visit(node[3])
+        print('</Update>')
+
+        self.indent()
+        print('<Body>')
+        self.visit(node[4])
+        print('</Body>')
+
+        self.indent_level -= 1
+        self.indent()
+        print('</ForStatement>')
+        
+    def visit_ASSIGNMENT(self, node):
+        self.indent()
+        print('<Assignment>')
+        self.indent_level += 1
+
+        self.visit(('IDENTIFIER', node[1]))
+
+        self.indent()
+        print('<Operator>', node[0], '</Operator>')
+
+        self.visit(node[2])  
+
+        self.indent_level -= 1
+        self.indent()
+        print('</Assignment>')
+
     #---------------------------------------------------------------------------------------------------------------------------------------
     
 ###########################################################################################################################################
@@ -346,8 +474,7 @@ class ASTXMLGenerator:
         
 # Usage:
 source_code = """
-let x: int = 1 and 2;
-let y: int = 2 or 1;
+let y: float = 3.14; //comment
 """
 
 try:
