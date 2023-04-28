@@ -1,0 +1,81 @@
+from lexer import Lexer, LexerError
+from parser_ import Parser, ParserError
+
+class SemanticError(Exception):
+    pass
+
+class SymbolTable:
+    def __init__(self):
+        self.scopes = [{}]
+
+    def enter_scope(self):
+        self.scopes.append({})
+
+    def exit_scope(self):
+        self.scopes.pop()
+
+    def add(self, name, data_type):
+        pass  # Add the symbol to the current scope
+
+    def lookup(self, name):
+        pass  # Lookup the symbol in the current and enclosing scopes
+
+    def update(self, name, data_type):
+        pass  # Update the symbol in the current scope
+
+class SemanticAnalyzer:
+    def __init__(self, ast):
+        self.ast = ast
+        self.symbol_table = SymbolTable()
+
+    def visit(self, node):
+        method_name = f"visit_{node[0]}"
+        visitor = getattr(self, method_name, self.generic_visit)
+        return visitor(node)
+
+    def generic_visit(self, node):
+        pass  # Implement generic visit if needed
+
+    def visit_DECLARATION(self, node):
+        pass  # Perform type checking for declaration
+
+    def visit_ASSIGNMENT(self, node):
+        pass  # Perform type checking for assignment
+
+    def visit_FUNCTION_DEF(self, node):
+        pass  # Perform type checking for function definition
+
+    def visit_FUNCTION_CALL(self, node):
+        pass  # Perform type checking for function call
+
+    def visit_ARGUMENT_LIST(self, node):
+        pass  # Perform type checking for argument list
+
+    def visit_STATEMENT_BLOCK(self, node):
+        pass  # Perform type checking for statement block
+
+    def visit_FOR(self, node):
+        pass  # Perform type checking for for loop
+
+    def visit_IF(self, node):
+        pass  # Perform type checking for if statement
+
+    # Add more visit methods for other nodes as needed
+
+# Usage:
+try:
+    lexer = Lexer(source_code)
+    tokens = lexer.tokenize()
+    parser = Parser(tokens)
+    ast = parser.parse()
+
+    semantic_analyzer = SemanticAnalyzer(ast)
+    for node in ast:
+        semantic_analyzer.visit(node)
+
+except LexerError as e:
+    print(f"Error: {e}")
+except ParserError as e:
+    print(f"Error: {e}")
+except SemanticError as e:
+    print(f"Error: {e}")

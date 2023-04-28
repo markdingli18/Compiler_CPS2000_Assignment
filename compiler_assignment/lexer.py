@@ -608,10 +608,10 @@ source_code = """
 __pixel(10, 20, "red");
 """
 
-try:
-    lexer = Lexer(source_code)
-    tokens = lexer.tokenize()
-    for token in tokens:
-        print(token)
-except LexerError as e:
-    print(f"Error: {e}")
+#try:
+#    lexer = Lexer(source_code)
+#    tokens = lexer.tokenize()
+#    for token in tokens:
+#        print(token)
+#except LexerError as e:
+#    print(f"Error: {e}")

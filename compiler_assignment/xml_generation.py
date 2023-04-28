@@ -474,22 +474,26 @@ class ASTXMLGenerator:
         
 # Usage:
 source_code = """
-let y: float = 3.14; //comment
+let x: int = 5 * 20 + 5;
+let y: float = 3.14;
+let z: bool = true;
+let v: bool = false;
+let w: colour = #FF0000;
 """
 
-try:
-    lexer = Lexer(source_code)
-    tokens = lexer.tokenize()
-    parser = Parser(tokens)
-    ast = parser.parse()
+#try:
+#    lexer = Lexer(source_code)
+#    tokens = lexer.tokenize()
+#    parser = Parser(tokens)
+#    ast = parser.parse()#
 
-    print("\nXML Representation:\n")    
-    xml_generator = ASTXMLGenerator(ast)
-    for node in ast:
-        xml_generator.visit(node)
-    print("\n" + "-"*100)
+#    print("\nXML Representation:\n")    
+#    xml_generator = ASTXMLGenerator(ast)
+#    for node in ast:
+#        xml_generator.visit(node)
+#    print("\n" + "-"*100)#
 
-except LexerError as e:
-    print(f"Error: {e}")
-except ParserError as e:
-    print(f"Error: {e}")
+#except LexerError as e:
+#    print(f"Error: {e}")
+#except ParserError as e:
+#    print(f"Error: {e}")
