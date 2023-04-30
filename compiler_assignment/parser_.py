@@ -85,6 +85,10 @@ class Parser:
 
         return ("BLOCK", block)
     
+    def assignment(self):
+        self.eat("ASSIGNMENT")
+        return self.expression()
+    
 ###########################################################################################################################################
     
     def parse_let_declaration(self):
