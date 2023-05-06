@@ -448,11 +448,7 @@ class ParserError(Exception):
 
 # Usage:
 source_code = """
-let x: int = 5 * 20 + 5;
-let y: float = 3.14;
-let z: bool = true;
-let v: bool = false;
-let w: colour = #FF0000;
+let x: int = 5;
 """
 
 #try:

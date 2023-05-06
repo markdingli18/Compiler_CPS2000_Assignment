@@ -512,26 +512,26 @@ class SemanticAnalyzer:
 ###########################################################################################################################################
 
 # Usage:
-source_code = """
-
-"""
-
-try:
-    lexer = Lexer(source_code)
-    tokens = lexer.tokenize()
-    parser = Parser(tokens)
-    ast = parser.parse()
-    print(ast)
-
-    semantic_analyzer = SemanticAnalyzer(ast)
-    for node in ast:
-        semantic_analyzer.visit(node)
-    
-    print("Semantic analysis completed successfully.")
-
-except LexerError as e:
-    print(f"Error: {e}")
-except ParserError as e:
-    print(f"Error: {e}")
-except SemanticError as e:
-    print(f"Error: {e}")
+#source_code = """
+#
+#"""
+#
+#try:
+#    lexer = Lexer(source_code)
+#    tokens = lexer.tokenize()
+#    parser = Parser(tokens)
+#    ast = parser.parse()
+#    print(ast)
+#
+#    semantic_analyzer = SemanticAnalyzer(ast)
+#    for node in ast:
+#        semantic_analyzer.visit(node)
+#    
+#    print("Semantic analysis completed successfully.")
+#
+#except LexerError as e:
+#    print(f"Error: {e}")
+#except ParserError as e:
+#    print(f"Error: {e}")
+#except SemanticError as e:
+#    print(f"Error: {e}")
