@@ -447,16 +447,17 @@ class ParserError(Exception):
 ###########################################################################################################################################
 
 # Usage:
-source_code = """
-let x: int = 5;
-"""
 
+# Specify the name of the file
+filename = 'input.txt'
+
+# Open the file and read the contents into a string
+with open(filename, 'r') as file:
+    source_code = file.read()
+    
 #try:
 #    lexer = Lexer(source_code)
 #    tokens = lexer.tokenize()
-#    print("\nLexer:\n")
-#    for token in tokens:
-#        print(token)
 #
 #    parser = Parser(tokens)
 #    parsed_program = parser.parse()

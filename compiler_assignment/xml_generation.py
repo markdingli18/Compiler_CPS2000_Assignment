@@ -473,27 +473,29 @@ class ASTXMLGenerator:
 ###########################################################################################################################################
         
 # Usage:
-source_code = """
-let x: int = 5 * 20 + 5;
-let y: float = 3.14;
-let z: bool = true;
-let v: bool = false;
-let w: colour = #FF0000;
-"""
+
+# Specify the name of the file
+filename = 'input.txt'
+
+# Open the file and read the contents into a string
+with open(filename, 'r') as file:
+    source_code = file.read()
 
 #try:
 #    lexer = Lexer(source_code)
 #    tokens = lexer.tokenize()
 #    parser = Parser(tokens)
-#    ast = parser.parse()#
-
+#    ast = parser.parse()
+#
+#    print("\n" + "-"*100)
 #    print("\nXML Representation:\n")    
 #    xml_generator = ASTXMLGenerator(ast)
 #    for node in ast:
 #        xml_generator.visit(node)
-#    print("\n" + "-"*100)#
-
+#
 #except LexerError as e:
 #    print(f"Error: {e}")
 #except ParserError as e:
 #    print(f"Error: {e}")
+#    
+#print("\n" + "-"*100)

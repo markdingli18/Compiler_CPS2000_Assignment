@@ -512,26 +512,33 @@ class SemanticAnalyzer:
 ###########################################################################################################################################
 
 # Usage:
-#source_code = """
-#
-#"""
-#
-#try:
-#    lexer = Lexer(source_code)
-#    tokens = lexer.tokenize()
-#    parser = Parser(tokens)
-#    ast = parser.parse()
-#    print(ast)
-#
-#    semantic_analyzer = SemanticAnalyzer(ast)
-#    for node in ast:
-#        semantic_analyzer.visit(node)
-#    
-#    print("Semantic analysis completed successfully.")
-#
-#except LexerError as e:
-#    print(f"Error: {e}")
-#except ParserError as e:
-#    print(f"Error: {e}")
-#except SemanticError as e:
-#    print(f"Error: {e}")
+
+# Specify the name of the file
+filename = 'input.txt'
+
+# Open the file and read the contents into a string
+with open(filename, 'r') as file:
+    source_code = file.read()
+
+try:
+    lexer = Lexer(source_code)
+    tokens = lexer.tokenize()
+    parser = Parser(tokens)
+    ast = parser.parse()
+    print("\n" + "-"*100+"\n\nAST: \n")
+    print(ast)
+
+    semantic_analyzer = SemanticAnalyzer(ast)
+    for node in ast:
+        semantic_analyzer.visit(node)
+    
+    print("\nSemantic analysis completed successfully!")
+
+except LexerError as e:
+    print(f"Error: {e}")
+except ParserError as e:
+    print(f"Error: {e}")
+except SemanticError as e:
+    print(f"Error: {e}")
+    
+print("\n" + "-"*100)
