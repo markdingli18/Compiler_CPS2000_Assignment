@@ -1,1 +1,5 @@
-let x: int = 5 * 20 + 5;
+if (x < 50) {
+  __print("x");
+} else {
+  __print("y");
+}

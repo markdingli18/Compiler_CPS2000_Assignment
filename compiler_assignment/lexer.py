@@ -1,15 +1,19 @@
 class Token:
     def __init__(self, token_type, lexeme):
+        # Store the token type and lexeme as instance variables
         self.token_type = token_type
         self.lexeme = lexeme
 
     def __str__(self):
+        # Return a string representation of the token
         return f"{self.token_type}({self.lexeme})"
 
 ###########################################################################################################################################
 
+# Define Lexer class
 class Lexer:
             
+    # Dictionary of keywords and their corresponding token types
     KEYWORDS = {
         "if": "IF",
         "else": "ELSE",
@@ -37,12 +41,14 @@ class Lexer:
     }
     
     def __init__(self, source_code):
+        # Store the source code and initialize other class attributes
         self.source_code = source_code
         self.transition_table = self.build_transition_table()
         self.current_state = 0
         self.position = 0
         self.open_quote = None
 
+    # Define a method for the transition table
     def build_transition_table(self):
         transition_table = {}
 
@@ -319,19 +325,25 @@ class Lexer:
 
 ###########################################################################################################################################
 
+    # Get the next token from the source code
     def get_next_char(self):
         if self.position < len(self.source_code):
             # Get the character at the current position in the source code
             char = self.source_code[self.position]
 
+            # Check if an open quote is present and if the current character is an escape character
             if self.open_quote and char == "\\":
+                # Move to the next character
                 self.position += 1
+                # Get the next character if present, else set it to None
                 next_char = self.source_code[self.position] if self.position < len(self.source_code) else None
+                # Check the escape sequence and replace the character with the corresponding value
                 if next_char in ['\\', '\"', '\'']:
                     char = next_char
                 elif next_char == 'n':
                     char = '\n'
                 else:
+                    # Raise an exception if an invalid escape sequence is encountered
                     raise InvalidEscapeSequenceError(f"\\{next_char}")
 
             # Increment the position to move to the next character
@@ -344,12 +356,15 @@ class Lexer:
 ###########################################################################################################################################    
 
     def get_token(self):
+        # Initialize an empty lexeme and longest_match string
         lexeme = ""
         longest_match = ""
 
         while True:
+            # Get the next character from the source code
             char = self.get_next_char()
 
+            # If there are no more characters, return the final token if there is one
             if char is None:
                 if lexeme:
                     token_type = self.get_token_type_from_state(self.current_state, longest_match)
@@ -359,6 +374,7 @@ class Lexer:
                         raise InvalidTokenError(longest_match)
                 return None
 
+            # Check for quotes and handle quoted strings
             if char in ["\"", "\'"]:
                 if self.open_quote == char and self.current_state in [19, 20, 21]:
                     lexeme += char
@@ -375,8 +391,10 @@ class Lexer:
                     self.open_quote = char
                     longest_match = lexeme
 
+            # Get the next state based on the current state and the current character
             next_state = self.transition_table.get((self.current_state, char), -1)
 
+            # If there is no next state, handle the final token if there is one
             if next_state == -1:
                 if self.current_state == 0:
                     if longest_match:
@@ -404,16 +422,20 @@ class Lexer:
                     else:
                         raise InvalidTokenError(longest_match)
             else:
+                # Update the current state and lexeme with the new character
                 self.current_state = next_state
                 lexeme += char
 
+                # Update the longest_match if there is a valid token type
                 token_type = self.get_token_type_from_state(self.current_state, lexeme)
                 if token_type:
                     longest_match = lexeme
 
 ###########################################################################################################################################
 
+    # This method takes a state and a lexeme, and returns the corresponding token type based on the state and lexeme
     def get_token_type_from_state(self, state, lexeme):
+        # Check the state and return the appropriate token type for the given lexeme
         if state == 1:
             # Check if the lexeme is a keyword
             return Lexer.KEYWORDS.get(lexeme, "IDENTIFIER")
@@ -562,23 +584,39 @@ class Lexer:
 ###########################################################################################################################################
 
     def tokenize(self):
+        # Initialize an empty list to hold the tokens
         tokens = []
+
         while True:
+            # Get the next token from the source code
             token = self.get_token()
+
+            # If there are no more tokens or if the current token is the "END" token, stop processing
             if token is None or token.token_type == "END":
                 break
+
+            # Ignore whitespace, single-line comments, and block comments
             if token.token_type not in ["WHITESPACE", "SINGLE_LINE_COMMENT", "BLOCK_COMMENT"]:
+                # Add the token to the list of tokens
                 tokens.append(token)
+
+        # Return the list of tokens
         return tokens
 
 ###########################################################################################################################################
 
     def lex_identifier_or_keyword(self):
+        # Keep advancing the current position while the current character is alphanumeric
         while self.is_alphanumeric(self.peek()):
             self.advance()
 
+        # Get the text of the identifier or keyword
         text = self.source[self.start:self.current]
+
+        # If the text is a keyword, set the token type to the keyword, otherwise set it to "IDENTIFIER"
         token_type = Lexer.KEYWORDS.get(text, "IDENTIFIER")
+
+        # Add the token to the list of tokens
         self.add_token(token_type, text)
 
 ###########################################################################################################################################
@@ -588,43 +626,46 @@ class LexerError(Exception):
 
 class UnexpectedCharacterError(LexerError):
     def __init__(self, char):
+        # Initialize the exception with the unexpected character
         self.char = char
         super().__init__(f"Unexpected character '{char}'")
 
 class InvalidTokenError(LexerError):
     def __init__(self, token):
+        # Initialize the exception with the invalid token
         self.token = token
         super().__init__(f"Invalid token '{token}'")
 
 class InvalidEscapeSequenceError(LexerError):
     def __init__(self, sequence):
+        # Initialize the exception with the invalid escape sequence
         self.sequence = sequence
         super().__init__(f"Invalid escape sequence '{sequence}'")
 
 ###########################################################################################################################################
 
-## Usage:
-#
-## Specify the name of the file
-#filename = 'input.txt'
-#
-## Open the file and read the contents into a string
-#with open(filename, 'r') as file:
-#    source_code = file.read()
-#
-## Tokenize the source code using the Lexer class
-#try:
-#    lexer = Lexer(source_code)
-#    print("\n" + "-"*100)
-#    print("\nLexer:\n")
-#    tokens = lexer.tokenize()
-#
-#    # Print each token in the list of tokens
-#    for token in tokens:
-#        print(token)
-#
-## If there is a LexerError, print an error message
-#except LexerError as e:
-#    print(f"Error: {e}")
-#
-#print("\n" + "-"*100)
+# Usage:
+
+# Specify the name of the file
+filename = 'input.txt'
+
+# Open the file and read the contents into a string
+with open(filename, 'r') as file:
+    source_code = file.read()
+
+# Tokenize the source code using the Lexer class
+try:
+    lexer = Lexer(source_code)
+    print("\n" + "-"*100)
+    print("\nLexer:\n")
+    tokens = lexer.tokenize()
+
+    # Print each token in the list of tokens
+    for token in tokens:
+        print(token)
+
+# If there is a LexerError, print an error message
+except LexerError as e:
+    print(f"Error: {e}")
+
+print("\n" + "-"*100)

@@ -382,22 +382,22 @@ class ParserError(Exception):
 source_code = """
 let x: int = 5 * 20 + 5;
 """
-#try:
-#    lexer = Lexer(source_code)
-#    tokens = lexer.tokenize()
-#    print("\nLexer:\n")
-#    for token in tokens:
-#        print(token)
-#
-#    parser = Parser(tokens)
-#    parsed_program = parser.parse()
-#    print("\n" + "-"*100)
-#    print("\nParsed program:\n")
-#    print(parsed_program)
-#
-#except LexerError as e:
-#    print(f"Error: {e}")
-#except ParserError as e:
-#    print(f"Error: {e}")
-#
-#print("\n" + "-"*100)
+try:
+    lexer = Lexer(source_code)
+    tokens = lexer.tokenize()
+    print("\nLexer:\n")
+    for token in tokens:
+        print(token)
+
+    parser = Parser(tokens)
+    parsed_program = parser.parse()
+    print("\n" + "-"*100)
+    print("\nParsed program:\n")
+    print(parsed_program)
+
+except LexerError as e:
+    print(f"Error: {e}")
+except ParserError as e:
+    print(f"Error: {e}")
+
+print("\n" + "-"*100)
