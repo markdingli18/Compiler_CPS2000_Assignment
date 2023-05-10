@@ -647,25 +647,25 @@ class InvalidEscapeSequenceError(LexerError):
 # Usage:
 
 # Specify the name of the file
-#filename = 'input.txt'
-#
-## Open the file and read the contents into a string
-#with open(filename, 'r') as file:
-#    source_code = file.read()
-#
-## Tokenize the source code using the Lexer class
-#try:
-#    lexer = Lexer(source_code)
-#    print("\n" + "-"*100)
-#    print("\nLexer:\n")
-#    tokens = lexer.tokenize()
-#
-#    # Print each token in the list of tokens
-#    for token in tokens:
-#        print(token)
-#
-## If there is a LexerError, print an error message
-#except LexerError as e:
-#    print(f"Error: {e}")
-#
-#print("\n" + "-"*100)
+filename = 'input.txt'
+
+# Open the file and read the contents into a string
+with open(filename, 'r') as file:
+    source_code = file.read()
+
+# Tokenize the source code using the Lexer class
+try:
+    lexer = Lexer(source_code)
+    print("\n" + "-"*100)
+    print("\nLexer:\n")
+    tokens = lexer.tokenize()
+
+    # Print each token in the list of tokens
+    for token in tokens:
+        print(token)
+
+# If there is a LexerError, print an error message
+except LexerError as e:
+    print(f"Error: {e}")
+
+print("\n" + "-"*100)

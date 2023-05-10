@@ -645,6 +645,7 @@ try:
     # Print the AST for debugging purposes
     print("\n" + "-"*100+"\n\nAST: \n")
     print(ast)
+    print()
 
     # Perform semantic analysis on the AST
     semantic_analyzer = SemanticAnalyzer(ast)

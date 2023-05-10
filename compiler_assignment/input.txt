@@ -1,1 +1,3 @@
-let y : int = x + 5;
+__pixel(0, 0, 255);
+__pixelr(0, 0, 255, 300, 0);
+__width(x); // Testing expressions with brackets
