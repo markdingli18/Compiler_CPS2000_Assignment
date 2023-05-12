@@ -633,37 +633,37 @@ filename = 'input.txt'
 with open(filename, 'r') as file:
     source_code = file.read()
 
-try:
-    # Tokenize the source code
-    lexer = Lexer(source_code)
-    tokens = lexer.tokenize()
-
-    # Parse the tokens to generate an AST
-    parser = Parser(tokens)
-    ast = parser.parse()
-
-    # Print the AST for debugging purposes
-    print("\n" + "-"*100+"\n\nAST: \n")
-    print(ast)
-    print()
-
-    # Perform semantic analysis on the AST
-    semantic_analyzer = SemanticAnalyzer(ast)
-    for node in ast:
-        semantic_analyzer.visit(node)
-    
-    # If no errors occurred during semantic analysis, print success message
-    print("\nSemantic analysis completed successfully!")
-
-except LexerError as e:
-    # Catch Lexer errors and print the error message
-    print(f"Error: {e}")
-except ParserError as e:
-    # Catch Parser errors and print the error message
-    print(f"Error: {e}")
-except SemanticError as e:
-    # Catch Semantic errors and print the error message
-    print(f"Error: {e}")
-    
-# Print a separator line
-print("\n" + "-"*100)
+#try:
+#    # Tokenize the source code
+#    lexer = Lexer(source_code)
+#    tokens = lexer.tokenize()
+#
+#    # Parse the tokens to generate an AST
+#    parser = Parser(tokens)
+#    ast = parser.parse()
+#
+#    # Print the AST for debugging purposes
+#    print("\n" + "-"*100+"\n\nAST: \n")
+#    print(ast)
+#    print()
+#
+#    # Perform semantic analysis on the AST
+#    semantic_analyzer = SemanticAnalyzer(ast)
+#    for node in ast:
+#        semantic_analyzer.visit(node)
+#    
+#    # If no errors occurred during semantic analysis, print success message
+#    print("\nSemantic analysis completed successfully!")
+#
+#except LexerError as e:
+#    # Catch Lexer errors and print the error message
+#    print(f"Error: {e}")
+#except ParserError as e:
+#    # Catch Parser errors and print the error message
+#    print(f"Error: {e}")
+#except SemanticError as e:
+#    # Catch Semantic errors and print the error message
+#    print(f"Error: {e}")
+#    
+## Print a separator line
+#print("\n" + "-"*100)

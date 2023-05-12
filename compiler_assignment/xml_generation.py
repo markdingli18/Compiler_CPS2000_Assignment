@@ -566,34 +566,34 @@ class ASTXMLGenerator:
         
 # Usage:
 
-# Specify the name of the file
-filename = 'input.txt'
+## Specify the name of the file
+#filename = 'input.txt'#
 
-# Open the file and read the contents into a string
-with open(filename, 'r') as file:
-    source_code = file.read()
+## Open the file and read the contents into a string
+#with open(filename, 'r') as file:
+#    source_code = file.read()#
 
-try:
-    # Tokenize the source code
-    lexer = Lexer(source_code)
-    tokens = lexer.tokenize()
+#try:
+#    # Tokenize the source code
+#    lexer = Lexer(source_code)
+#    tokens = lexer.tokenize()#
 
-    # Parse the tokens into an abstract syntax tree (AST)
-    parser = Parser(tokens)
-    ast = parser.parse()
+#    # Parse the tokens into an abstract syntax tree (AST)
+#    parser = Parser(tokens)
+#    ast = parser.parse()#
 
-    # Generate an XML representation of the AST
-    print("\n" + "-"*100)
-    print("\nXML Representation:\n")    
-    xml_generator = ASTXMLGenerator(ast)
-    for node in ast:
-        xml_generator.visit(node)
+#    # Generate an XML representation of the AST
+#    print("\n" + "-"*100)
+#    print("\nXML Representation:\n")    
+#    xml_generator = ASTXMLGenerator(ast)
+#    for node in ast:
+#        xml_generator.visit(node)#
 
-# Catch and report lexer errors
-except LexerError as e:
-    print(f"Error: {e}")
-# Catch and report parser errors
-except ParserError as e:
-    print(f"Error: {e}")
-    
-print("\n" + "-"*100)
+## Catch and report lexer errors
+#except LexerError as e:
+#    print(f"Error: {e}")
+## Catch and report parser errors
+#except ParserError as e:
+#    print(f"Error: {e}")
+#    
+#print("\n" + "-"*100)
