@@ -12,7 +12,7 @@ class PixIRCodeGenerator:
         self.ast = ast
         self.code = []
         self.frame_offset = 0
-        self.variables = {}  # a dictionary to keep track of variables and their frame offsets
+        self.variables = {} 
         
     #---------------------------------------------------------------------------------------------------------------------------------------
 
@@ -40,18 +40,14 @@ class PixIRCodeGenerator:
         
     def visit_DECLARATION(self, node):
         _, data_type, name, expression = node
-        self.visit(expression)  # generates the code for the expression and adds it to self.code
-
-        # Allocate space for new variable
+        self.visit(expression)  
         self.code.append("push 1")
         self.code.append("alloc")
 
-        # Store the value of the expression in the variable
         self.code.append(f"push {self.frame_offset}")
         self.code.append("push 0")
         self.code.append("st")
 
-        # Add the variable to our dictionary
         self.variables[name] = self.frame_offset
 
         self.frame_offset += 1
@@ -60,10 +56,9 @@ class PixIRCodeGenerator:
 
     def visit_ASSIGNMENT(self, node):
         _, name, expression = node
-        self.visit(expression)  # generates the code for the expression and adds it to self.code
+        self.visit(expression)  
 
-        # Assuming you have a way to get the frame offset of a variable
-        var_offset = self.get_var_offset(name)  # you need to implement this method
+        var_offset = self.get_var_offset(name)  
 
         self.code.append(f"push {var_offset}")
         self.code.append("push 0")
@@ -72,15 +67,15 @@ class PixIRCodeGenerator:
     #---------------------------------------------------------------------------------------------------------------------------------------
 
     def visit_PLUS(self, node):
-        self.visit(node[1])  # generates the code for the left expression and adds it to self.code
-        self.visit(node[2])  # generates the code for the right expression and adds it to self.code
+        self.visit(node[1])  
+        self.visit(node[2])  
         self.code.append("add")
     
     #---------------------------------------------------------------------------------------------------------------------------------------
     
     def visit_MUL(self, node):
-        self.visit(node[1])  # generates the code for the left expression and adds it to self.code
-        self.visit(node[2])  # generates the code for the right expression and adds it to self.code
+        self.visit(node[1])  
+        self.visit(node[2])  
         self.code.append("mul")
 
     #---------------------------------------------------------------------------------------------------------------------------------------    
@@ -89,7 +84,6 @@ class PixIRCodeGenerator:
         _, name = node
         var_offset = self.get_var_offset(name)
 
-        # Load the value of the variable onto the stack
         self.code.append(f"push {var_offset}")
         self.code.append("push 0")
         self.code.append("ld")
@@ -110,7 +104,7 @@ class PixIRCodeGenerator:
     
     def visit_BOOLEAN_LITERAL(self, node):
         _, value = node
-        self.code.append(f"push {int(value)}")  # convert boolean to int (True -> 1, False -> 0)
+        self.code.append(f"push {int(value)}")  
         
     #---------------------------------------------------------------------------------------------------------------------------------------
     
@@ -162,10 +156,180 @@ class PixIRCodeGenerator:
         self.visit(end_color)
 
         self.code.append("pixelr")
+        
+    #--------------------------------------------------------------------------------------------------------------------------------------- 
+        
+    def visit_WIDTH(self, node):
+        _, width_node = node
+        self.visit(width_node)  
+        self.code.append("width")
+        
+    def visit_HEIGHT(self, node):
+        _, width_node = node
+        self.visit(width_node)  
+        self.code.append("height")
+        
+    #---------------------------------------------------------------------------------------------------------------------------------------
+    
+    def visit_READ_STATEMENT(self, node):
+        _, arguments = node
+        x, y = arguments
+
+        self.visit(x)
+        self.visit(y)
+
+        self.code.append("read")
+        
+    #---------------------------------------------------------------------------------------------------------------------------------------
+        
+    def visit_IDENTIFIER(self, node):
+        _, name = node
+        var_offset = self.get_var_offset(name)
+
+        self.code.append(f"push {var_offset}")
+        self.code.append("push 0")
+        self.code.append("ld")
+        
+    #---------------------------------------------------------------------------------------------------------------------------------------
+    
+    def visit_RANDI_STATEMENT(self, node):
+        _, expression = node
+        self.visit(expression)
+        self.code.append("irnd")
+        
+    #---------------------------------------------------------------------------------------------------------------------------------------
+    
+    def visit_RELATIONAL_OPERATOR(self, node):
+        _, left_expr, right_expr = node
+
+        # Determine the operator
+        if left_expr[0] == "IDENTIFIER" and right_expr[0] == "INTEGER_LITERAL":
+            operator = ">"
+        elif left_expr[0] == "INTEGER_LITERAL" and right_expr[0] == "IDENTIFIER":
+            operator = "<"
+        else:
+            raise CodeGenerationError(f"Unsupported relational operator between {left_expr[0]} and {right_expr[0]}.")
+
+        # Visit the left and right expressions
+        self.visit(left_expr)
+        self.visit(right_expr)
+
+        # Add the appropriate operation to the code based on the operator
+        if operator == "<":
+            self.code.append("lt")
+        elif operator == "<=":
+            self.code.append("le")
+        elif operator == ">":
+            self.code.append("gt")
+        elif operator == ">=":
+            self.code.append("ge")
+        elif operator == "==":
+            self.code.append("eq")
+        elif operator == "!=":
+            self.code.append("neq")
+        else:
+            raise CodeGenerationError(f"Unsupported relational operator '{operator}'.")
 
     #---------------------------------------------------------------------------------------------------------------------------------------
+    
+    def visit_WHILE(self, node):
+        _, condition, body = node
 
-    # ... continue implementing visit methods for other node types
+        self.code.append(".WHILE_START")  # label for start of the loop
+
+        # evaluate the condition
+        self.visit(condition)
+
+        # based on condition, jump to end of loop if condition is false
+        self.code.append("cjmp .WHILE_END")
+
+        # generate code for the body of the loop
+        self.visit(body)  # this line is changed
+
+        # jump back to start of loop
+        self.code.append("jmp .WHILE_START")
+
+        self.code.append(".WHILE_END")  # label for end of the loop
+        
+    #---------------------------------------------------------------------------------------------------------------------------------------
+    
+    def visit_BLOCK(self, node):
+        _, statements = node
+        for statement in statements:
+            self.visit(statement)
+            
+    #---------------------------------------------------------------------------------------------------------------------------------------
+    
+    def visit_IF(self, node):
+        _, condition, if_block, *else_block = node
+
+        # Visit the condition
+        self.visit(condition)
+            
+        # Add some code to check the result of the condition
+        # and skip the IF block if the condition is false
+        self.code.append("cjmp .ELSE")
+
+        # Visit the IF block
+        self.visit(if_block)
+
+        # Add some code to jump over the ELSE block
+        # if the IF block was executed
+        self.code.append("jmp .ENDIF")
+
+        # Visit the ELSE block (this will only happen if the condition was false)
+        if else_block:
+            self.visit(else_block[0])  # else_block is a list now, access its first (and only) element
+            
+        self.code.append(".ENDIF")
+        
+    # todo else
+    def visit_ELSE(self, node):
+        _, _, else_block = node
+
+        # This label will be jumped to if the condition in the IF statement was false
+        self.code.append(".ELSE")
+
+        # Visit the ELSE block
+        self.visit(else_block)
+
+    #---------------------------------------------------------------------------------------------------------------------------------------
+    
+    def visit_FUNCTION_DEF(self, node):
+        _, function_name, parameters, return_type, body = node
+
+        # Generate a label for the function name
+        self.code.append(f".{function_name}")
+
+        # Add parameters to the variable environment and adjust the frame offset
+        for parameter in parameters:
+            name, type_ = parameter
+            self.variables[name] = self.frame_offset
+            self.frame_offset += 1
+
+        # Generate code for the function body
+        self.visit(body)
+
+        # Add a return statement if not already present in the body
+        if body[-1][0] != "RETURN":
+            self.code.append("ret")
+
+    def visit_RETURN(self, node):
+        _, expression = node
+        if expression is not None:
+            # Generate code to load the value of the returned variable onto the stack
+            name = expression[1]
+            var_offset = self.get_var_offset(name)
+            self.code.append(f"push {var_offset}")
+            self.code.append("push 0")
+            self.code.append("ld")
+
+        self.code.append("ret")
+
+    #---------------------------------------------------------------------------------------------------------------------------------------
+    
+    # ToDo For loop 
+    
     
     #---------------------------------------------------------------------------------------------------------------------------------------
 
@@ -173,7 +337,6 @@ class PixIRCodeGenerator:
         for node in self.ast:
             self.visit(node)
         
-        # Add a return statement at the end of the function
         self.code.append("ret")
 
         return "\n".join(self.code)
@@ -182,7 +345,9 @@ class PixIRCodeGenerator:
 
 # Usage:
 source_code = '''
-let w: colour = #FF0000;
+for (let x: int = 0; x < 10; x = x + 1) {
+  __print("hello");
+}
 '''
 
 try:
