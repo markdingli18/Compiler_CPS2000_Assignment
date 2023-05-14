@@ -591,26 +591,26 @@ with open(filename, 'r') as file:
     source_code = file.read()
     
 # Attempt to tokenize and parse the source code
-try:
-    # Tokenize the source code
-    lexer = Lexer(source_code)
-    tokens = lexer.tokenize()
+#try:
+#    # Tokenize the source code
+#    lexer = Lexer(source_code)
+#    tokens = lexer.tokenize()#
 
-    # Parse the tokens into an abstract syntax tree
-    parser = Parser(tokens)
-    parsed_program = parser.parse()
+#    # Parse the tokens into an abstract syntax tree
+#    parser = Parser(tokens)
+#    parsed_program = parser.parse()#
 
-    # Print the parsed program
-    print("\n" + "-"*100)
-    print("\nParsed program:\n")
-    print(parsed_program)
+#    # Print the parsed program
+#    print("\n" + "-"*100)
+#    print("\nParsed program:\n")
+#    print(parsed_program)#
 
-# Catch and report lexer errors
-except LexerError as e:
-    print(f"Error: {e}")
+## Catch and report lexer errors
+#except LexerError as e:
+#    print(f"Error: {e}")#
 
-# Catch and report parser errors
-except ParserError as e:
-    print(f"Error: {e}")
+## Catch and report parser errors
+#except ParserError as e:
+#    print(f"Error: {e}")#
 
-print("\n" + "-"*100)
+#print("\n" + "-"*100)

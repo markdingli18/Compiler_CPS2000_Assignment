@@ -330,7 +330,6 @@ class PixIRCodeGenerator:
     
     # ToDo For loop 
     
-    
     #---------------------------------------------------------------------------------------------------------------------------------------
 
     def generate(self):
@@ -344,11 +343,13 @@ class PixIRCodeGenerator:
 ###########################################################################################################################################
 
 # Usage:
-source_code = '''
-for (let x: int = 0; x < 10; x = x + 1) {
-  __print("hello");
-}
-'''
+
+# Specify the name of the file
+filename = 'input.txt'
+
+# Open the file and read the contents into a string
+with open(filename, 'r') as file:
+    source_code = file.read()
 
 try:
     # Tokenization
