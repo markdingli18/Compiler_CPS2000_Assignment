@@ -1,0 +1,8 @@
+let x_1: int = 15;
+let x_2: float = 3.14;
+let y: bool = false;
+let z: colour = #FF0000;
+
+__print(x_1);
+__pixelr(0, 0, 255, 300, #FF0000);
+__delay(1000);

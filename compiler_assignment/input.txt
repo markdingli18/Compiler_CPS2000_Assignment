@@ -1,7 +1,0 @@
-let x: int = 15;
-let y: int = 18;
-
-__width(20);
-__height(25);
-__read(x,y);
-__randi(x);
